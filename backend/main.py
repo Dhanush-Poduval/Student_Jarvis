@@ -1,8 +1,19 @@
-from fastapi import FastAPI,UploadFile,File
+from fastapi import FastAPI,UploadFile,File,Form
 import PyPDF2
 import io
+import torch
+from transformers import pipeline
 
 app =FastAPI()
+
+qa_pipeline=pipeline("question-answering",model="distilbert-base-cased-distilled-squad")
+
+text=""
+def ask_agent(question , context_text):
+    result=qa_pipeline(question=question,context=context_text)
+   
+    
+    return result['answer']
 
 def extract_pdf(file:io.BytesIO):
     pdf_reader=PyPDF2.PdfReader(file)
@@ -19,4 +30,14 @@ async def upload_pdf(file:UploadFile=File(...)):
     global text
     text=extract_pdf(pdf_file)
     return {'The text is ':text[:500]}
+
+@app.post('/ask')
+async def ask_question(question:str=Form(...)):
+    
+    if not text:
+        return{"error":"No PDF uploaded yet"}
+    
+    answer =ask_agent(question,text)
+    return{"answer":answer}
+
 
