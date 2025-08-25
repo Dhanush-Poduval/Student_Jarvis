@@ -6,11 +6,12 @@ from transformers import pipeline
 
 app =FastAPI()
 
-qa_pipeline=pipeline("question-answering",model="distilbert-base-cased-distilled-squad")
+qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 
 text=""
 def ask_agent(question , context_text):
     result=qa_pipeline(question=question,context=context_text)
+    print(f"Confidence score: {result['score']:.2f}")
    
     
     return result['answer']
