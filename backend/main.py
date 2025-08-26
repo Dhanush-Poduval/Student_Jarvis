@@ -22,6 +22,15 @@ def chunk_text(pages,chunk_size=400,overlaps=50):
             start+=chunk_size-overlaps
     return chunks
 
+def summarize_pdf_chunks(pages, chunk_size=400, overlap=50):
+    chunks = chunk_text(pages, chunk_size=chunk_size, overlaps=overlap)
+    summaries = []
+    for chunk in chunks:
+        if len(chunk["text"].strip()) < 20:
+            continue
+        summary = summarizer(chunk["text"], max_length=60, min_length=20, do_sample=False)
+        summaries.append(summary[0]['summary_text'])
+    return summaries
 
 def ask_agent(question , pages):
    chunks=chunk_text(pages)
@@ -105,8 +114,11 @@ async def upload_docx(file: UploadFile = File(...)):
     return {"The text is": preview, "The page is": preview_page}
 
 @app.post('/summarize_pdf')
-async def summarize_pdf(file:UploadFile=File(...)):
-    pass
+async def summarize_pdf_endpoint():
+    if not text:
+        return {"error": "No document uploaded yet"}
+    summary = summarize_pdf_chunks(text)
+    return {"summary": summary}
 
 
 
