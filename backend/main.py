@@ -7,6 +7,7 @@ from docx import Document
 app =FastAPI()
 
 qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 text=""
 def chunk_text(pages,chunk_size=400,overlaps=50):
@@ -92,6 +93,7 @@ async def ask_question(question:str=Form(...)):
     answer ,page =ask_agent(question,text)
     return{"answer":answer , "page":page}
 
+
 @app.post('/student_docx')
 async def upload_docx(file: UploadFile = File(...)):
     file_content = await file.read()
@@ -101,6 +103,10 @@ async def upload_docx(file: UploadFile = File(...)):
     preview = text[0]["text"][:500]
     preview_page = text[0]["page"]
     return {"The text is": preview, "The page is": preview_page}
+
+@app.post('/summarize_pdf')
+async def summarize_pdf(file:UploadFile=File(...)):
+    pass
 
 
 
