@@ -2,6 +2,7 @@ from fastapi import FastAPI,UploadFile,File,Form
 import PyPDF2
 import io
 from transformers import pipeline
+from docx import Document
 
 app =FastAPI()
 
@@ -47,7 +48,19 @@ def clean_page_text(page_text: str):
     page_text = page_text.replace("\n", " ").strip()
     return page_text
     
-    
+from docx import Document
+
+def extract_docx(file: io.BytesIO):
+    doc = Document(file)
+    full_text = []
+    for para in doc.paragraphs:
+        if para.text.strip():
+            clean_para = clean_page_text(para.text)
+            full_text.append(clean_para)
+    pages_text = [{"page": i+1, "text": para} for i, para in enumerate(full_text)]
+    return pages_text
+
+
 
 def extract_pdf(file:io.BytesIO):
     pdf_reader=PyPDF2.PdfReader(file)
@@ -78,5 +91,16 @@ async def ask_question(question:str=Form(...)):
     
     answer ,page =ask_agent(question,text)
     return{"answer":answer , "page":page}
+
+@app.post('/student_docx')
+async def upload_docx(file: UploadFile = File(...)):
+    file_content = await file.read()
+    docx_file = io.BytesIO(file_content)
+    global text
+    text = extract_docx(docx_file)
+    preview = text[0]["text"][:500]
+    preview_page = text[0]["page"]
+    return {"The text is": preview, "The page is": preview_page}
+
 
 
