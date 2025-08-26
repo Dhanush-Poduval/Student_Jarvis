@@ -117,8 +117,18 @@ async def ask_question(question:str=Form(...)):
 async def summarize_pdf_endpoint():
     if not text:
         return {"error": "No document uploaded yet"}
+    flashcards=[]
     summary = summarize_pdf_chunks(text)
-    return {"summary": summary}
+    for i, page in enumerate(summary):
+        
+        page_number = text[i]["page"] if i < len(text) else None
+        flashcards.append({
+            "question": f"Key point {i+1}",
+            "answer": page,
+            "page": page_number
+        })
+
+    return {"flashcard":flashcards}
 
 
 
