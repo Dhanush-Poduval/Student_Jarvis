@@ -92,6 +92,16 @@ async def upload_pdf(file:UploadFile=File(...)):
     preview=text[0]["text"][:500]
     preview_page=text[0]["page"]
     return {'The text is ':preview,"The page is ":preview_page}
+@app.post('/student_docx')
+async def upload_docx(file: UploadFile = File(...)):
+    file_content = await file.read()
+    docx_file = io.BytesIO(file_content)
+    global text
+    text = extract_docx(docx_file)
+    preview = text[0]["text"][:500]
+    preview_page = text[0]["page"]
+    return {"The text is": preview, "The page is": preview_page}
+
 
 @app.post('/ask')
 async def ask_question(question:str=Form(...)):
@@ -102,16 +112,6 @@ async def ask_question(question:str=Form(...)):
     answer ,page =ask_agent(question,text)
     return{"answer":answer , "page":page}
 
-
-@app.post('/student_docx')
-async def upload_docx(file: UploadFile = File(...)):
-    file_content = await file.read()
-    docx_file = io.BytesIO(file_content)
-    global text
-    text = extract_docx(docx_file)
-    preview = text[0]["text"][:500]
-    preview_page = text[0]["page"]
-    return {"The text is": preview, "The page is": preview_page}
 
 @app.post('/summarize_pdf')
 async def summarize_pdf_endpoint():
