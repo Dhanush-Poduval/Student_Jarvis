@@ -58,7 +58,7 @@ def clean_page_text(page_text: str):
     page_text = page_text.replace("\n", " ").strip()
     return page_text
     
-from docx import Document
+
 
 def extract_docx(file: io.BytesIO):
     doc = Document(file)
@@ -123,7 +123,7 @@ async def summarize_pdf_endpoint():
         
         page_number = text[i]["page"] if i < len(text) else None
         flashcards.append({
-            "question": f"Key point {i+1}",
+            "Point": f"Key point {i+1}",
             "answer": page,
             "page": page_number
         })
