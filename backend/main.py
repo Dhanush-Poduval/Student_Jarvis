@@ -36,8 +36,14 @@ def summarize_pdf_chunks(pages, chunk_size=600, overlap=50):
         summaries.append(summary[0]['summary_text'])
     return summaries
 
-def ask_agent(question , pages):
-   chunks=chunk_text(pages)
+def ask_agent(question , pages ):
+   
+   total_words=sum(len(p["text"].split())for p in pages)
+   if len(pages)==1 or total_words<400:
+       chunks=pages
+   else:
+       chunks=chunk_text(pages)
+       
    best_score=0
    best_answer="No answer found"
    for chunk in chunks:
@@ -70,15 +76,17 @@ def clean_page_text(page_text: str):
     
 
 
-def extract_docx(file: io.BytesIO):
+def extract_docx(file: io.BytesIO , min_words=7):
     doc = Document(file)
     full_text = []
     for para in doc.paragraphs:
         if para.text.strip():
             clean_para = clean_page_text(para.text)
-            full_text.append(clean_para)
-        if len(clean_para.split()) < 10:
+        if len(clean_para.split())<min_words:
             continue
+        if re.fullmatch(r"[0-9\s\-]+", clean_para):
+            continue
+        full_text.append(clean_para)
     pages_text = [{"page": i+1, "text": para} for i, para in enumerate(full_text)]
     return pages_text
 
