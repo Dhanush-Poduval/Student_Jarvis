@@ -20,10 +20,11 @@ summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 text=""
 textbar=""
 flashcards=[]
-def chunk_text(pages,chunk_size=400,overlaps=50):
+def chunk_text(pages,chunk_size=100,overlaps=50):
     chunks=[]
+   
     for page in pages:
-        words=page["text"].split()
+        words=page["text"].split() 
         start=0
         while start<len(words):
             end=min(start+chunk_size,len(words))
@@ -32,13 +33,16 @@ def chunk_text(pages,chunk_size=400,overlaps=50):
             start+=chunk_size-overlaps
     return chunks
 
-def summarize_pdf_chunks(pages, chunk_size=600, overlap=50):
-    chunks = chunk_text(pages, chunk_size=chunk_size, overlaps=overlap)
+def summarize_pdf_chunks(pages):
+    
+    chunks = chunk_text(pages, chunk_size=100, overlaps=50)
+    
+    
     summaries = []
     for chunk in chunks:
         if len(chunk["text"].strip()) < 20:
             continue
-        summary = summarizer(chunk["text"], max_length=60, min_length=20, do_sample=False)
+        summary = summarizer(chunk["text"], max_length=80, min_length=50, do_sample=False)
         summaries.append(summary[0]['summary_text'])
     return summaries
 
@@ -82,20 +86,31 @@ def clean_page_text(page_text: str):
     
 
 
-def extract_docx(file: io.BytesIO , min_words=7):
+def extract_docx(file: io.BytesIO , min_words=7, chunk_size=300, overlap=50):
     doc = Document(file)
     meaningful_paras = []
     for para in doc.paragraphs:
         if para.text.strip():
             clean_para = clean_page_text(para.text)
-        if len(clean_para.split())<min_words:
-            continue
-        if re.fullmatch(r"[0-9\s\-]+", clean_para):
-            continue
-        meaningful_paras.append(clean_para)
+            if len(clean_para.split()) < min_words:
+                continue
+            if re.fullmatch(r"[0-9\s\-]+", clean_para):
+                continue
+            meaningful_paras.append(clean_para)
+    
+    # Split into chunks like PDF
     full_text = " ".join(meaningful_paras)
-    pages_text = [{"text": full_text} ]
-    return pages_text
+    words = full_text.split()
+    chunks = []
+    start = 0
+    while start < len(words):
+        end = min(start + chunk_size, len(words))
+        chunk_text = " ".join(words[start:end])
+        chunks.append({"text": chunk_text})
+        start += chunk_size - overlap
+
+    return chunks
+
 
 
 
@@ -126,7 +141,7 @@ async def upload_pdf(file:UploadFile=File(...)):
 async def text_type(type_text:str):
     global textbar
     textbar=type_text
-    if len(text.split())>500:
+    if len(textbar.split())>500:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,detail="The amount of words crossed the word limit")
     return{"text":textbar}
 
@@ -157,6 +172,7 @@ async def ask_question(question:str=Form(...)):
 
 @app.post('/summarize_pdf')
 async def summarize_pdf_endpoint():
+
     if not text:
         return {"error": "No document uploaded yet"}
     global flashcards
