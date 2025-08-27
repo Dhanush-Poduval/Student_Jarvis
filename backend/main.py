@@ -101,7 +101,7 @@ def extract_pdf(file:io.BytesIO):
         clean_page=clean_page_text(raw_page_text)
         if len(clean_page.split()) < 10:
             continue
-        pages_text.append({"page":i+1,"text":clean_page})
+        pages_text.append({"text":clean_page})
 
 
     return pages_text
