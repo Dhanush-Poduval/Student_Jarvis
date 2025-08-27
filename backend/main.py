@@ -22,7 +22,7 @@ def chunk_text(pages,chunk_size=400,overlaps=50):
         while start<len(words):
             end=min(start+chunk_size,len(words))
             chunk=" ".join(words[start:end])
-            chunks.append({"page":page["page"],"text":chunk})
+            chunks.append({"text":chunk})
             start+=chunk_size-overlaps
     return chunks
 
@@ -36,7 +36,7 @@ def summarize_pdf_chunks(pages, chunk_size=600, overlap=50):
         summaries.append(summary[0]['summary_text'])
     return summaries
 
-def ask_agent(question , pages ):
+def ask_agent(question ,pages):
    
    total_words=sum(len(p["text"].split())for p in pages)
    if len(pages)==1 or total_words<400:
@@ -49,7 +49,7 @@ def ask_agent(question , pages ):
    for chunk in chunks:
     if len(chunk["text"].strip())<20:
         continue
-    print(f"[DEBUG] Page {chunk['page']} chunk preview: {chunk['text'][:100]}")
+    print(f"[DEBUG] chunk preview: {chunk['text'][:100]}")
     result = qa_pipeline(question=question, context=chunk["text"])
     print(f"[DEBUG] Score: {result['score']}, Answer: {result['answer']}")
 
@@ -78,7 +78,7 @@ def clean_page_text(page_text: str):
 
 def extract_docx(file: io.BytesIO , min_words=7):
     doc = Document(file)
-    full_text = []
+    meaningful_paras = []
     for para in doc.paragraphs:
         if para.text.strip():
             clean_para = clean_page_text(para.text)
@@ -86,8 +86,9 @@ def extract_docx(file: io.BytesIO , min_words=7):
             continue
         if re.fullmatch(r"[0-9\s\-]+", clean_para):
             continue
-        full_text.append(clean_para)
-    pages_text = [{"page": i+1, "text": para} for i, para in enumerate(full_text)]
+        meaningful_paras.append(clean_para)
+    full_text = " ".join(meaningful_paras)
+    pages_text = [{"text": full_text} ]
     return pages_text
 
 
@@ -112,18 +113,17 @@ async def upload_pdf(file:UploadFile=File(...)):
     pdf_file=io.BytesIO(file_content)
     global text
     text=extract_pdf(pdf_file)
-    preview=text[0]["text"][:500]
-    preview_page=text[0]["page"]
-    return {'The text is ':preview,"The page is ":preview_page}
+    preview=text[:500]
+    return {'The text is ':preview}
 @app.post('/student_docx')
 async def upload_docx(file: UploadFile = File(...)):
     file_content = await file.read()
     docx_file = io.BytesIO(file_content)
     global text
     text = extract_docx(docx_file)
-    preview = text[0]["text"][:500]
-    preview_page = text[0]["page"]
-    return {"The text is": preview, "The page is": preview_page}
+    preview = text[:500]
+   
+    return {"The text is": preview}
 
 
 @app.post('/ask')
@@ -132,7 +132,7 @@ async def ask_question(question:str=Form(...)):
     if not text:
         return{"error":"No PDF uploaded yet"}
     
-    answer ,page =ask_agent(question,text)
+    answer =ask_agent(question,text)
     return{"answer":answer}
 
 
