@@ -1,13 +1,20 @@
 from fastapi import FastAPI,UploadFile,File,Form
+from fastapi.responses import StreamingResponse
 import PyPDF2
-import io
+import io,os
 import re
+import elevenlabs
 from transformers import pipeline
 from docx import Document
-from elevenlabs import save
+from elevenlabs import ElevenLabs
 from dotenv import load_dotenv
 
+load_dotenv()
 app =FastAPI()
+
+client =ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
+
+
 
 qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
@@ -153,12 +160,18 @@ async def summarize_pdf_endpoint():
 
     return {"flashcard":flashcards}
 
-#@app.post('/tts')
-#async def texttospeech():
-    #if not text:
-        #return{"error":"No document uploaded"}
-    #for i,pages in enumerate(flashcards):
-       # pass
+@app.post('/tts')
+async def texttospeech():
+    if not flashcards:
+        return{"error":"No file uploaded"}
+    combined_text=" ".join([f"{fc['Point']}:{fc['answer']}" for fc in flashcards])
+    audio_stream=client.text_to_speech.convert(
+        voice_id="pqHfZKP75CvOlQylNhV4",
+        model_id="eleven_multilingual_v2",
+        text=combined_text
+    )
+    audio_bytes=b"".join(audio_stream)
+    return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/mpeg")
 
 
 
