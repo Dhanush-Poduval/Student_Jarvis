@@ -56,9 +56,9 @@ def ask_agent(question , pages ):
     if result['score']>best_score:
         best_score=result['score']
         best_answer=result['answer']
-        best_page=chunk["page"]
+        
    print(f"the best score is :{best_score:.2f}")
-   return best_answer , best_page
+   return best_answer 
 
 def clean_page_text(page_text: str):
     page_text = re.sub(r"Submitted By:.*", "", page_text)
@@ -133,7 +133,7 @@ async def ask_question(question:str=Form(...)):
         return{"error":"No PDF uploaded yet"}
     
     answer ,page =ask_agent(question,text)
-    return{"answer":answer , "page":page}
+    return{"answer":answer}
 
 
 @app.post('/summarize_pdf')
@@ -144,11 +144,11 @@ async def summarize_pdf_endpoint():
     summary = summarize_pdf_chunks(text)
     for i, page in enumerate(summary):
         
-        page_number = text[i]["page"] if i < len(text) else None
+        
         flashcards.append({
             "Point": f"Key point {i+1}",
             "answer": page,
-            "page": page_number
+            
         })
 
     return {"flashcard":flashcards}
