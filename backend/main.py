@@ -3,16 +3,14 @@ from fastapi.responses import StreamingResponse
 import PyPDF2
 import io,os
 import re
-import elevenlabs
 from transformers import pipeline
 from docx import Document
-from elevenlabs import ElevenLabs
 from dotenv import load_dotenv
+from gtts import gTTS
 
 load_dotenv()
 app =FastAPI()
 
-client =ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
 
 
@@ -162,16 +160,15 @@ async def summarize_pdf_endpoint():
 
 @app.post('/tts')
 async def texttospeech():
-    if not flashcards:
-        return{"error":"No file uploaded"}
-    combined_text=" ".join([f"{fc['Point']}:{fc['answer']}" for fc in flashcards])
-    audio_stream=client.text_to_speech.convert(
-        voice_id="pqHfZKP75CvOlQylNhV4",
-        model_id="eleven_multilingual_v2",
-        text=combined_text
-    )
-    audio_bytes=b"".join(audio_stream)
-    return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/mpeg")
+  if not flashcards:
+      return{"error":"No file uploaded yet"}
+  text=" ".join([f["answer"]for f in flashcards])
 
+  tts=gTTS(text=text,lang="en")
+  audio_bytes=io.BytesIO()
+  tts.write_to_fp(audio_bytes)
+  audio_bytes.seek(0)
+
+  return StreamingResponse(audio_bytes,media_type="audio/mpeg")
 
 
