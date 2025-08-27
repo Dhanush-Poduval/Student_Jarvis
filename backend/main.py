@@ -5,10 +5,9 @@ import io
 import re
 from transformers import pipeline
 from docx import Document
-from dotenv import load_dotenv
 from gtts import gTTS
 
-load_dotenv()
+
 app =FastAPI()
 
 
@@ -18,7 +17,6 @@ qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 text=""
-textbar=""
 flashcards=[]
 def chunk_text(pages,chunk_size=100,overlaps=50):
     chunks=[]
@@ -45,6 +43,8 @@ def summarize_pdf_chunks(pages):
         summary = summarizer(chunk["text"], max_length=80, min_length=50, do_sample=False)
         summaries.append(summary[0]['summary_text'])
     return summaries
+
+
 
 def ask_agent(question ,pages):
    
@@ -139,11 +139,12 @@ async def upload_pdf(file:UploadFile=File(...)):
 
 @app.post('/text')
 async def text_type(type_text:str):
-    global textbar
     textbar=type_text
     if len(textbar.split())>500:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,detail="The amount of words crossed the word limit")
-    return{"text":textbar}
+    global text
+    text=[{"text":textbar}]
+    return{"text":text[0]['text'][:500]}
 
 
 @app.post('/student_docx')
@@ -160,11 +161,9 @@ async def upload_docx(file: UploadFile = File(...)):
 @app.post('/ask')
 async def ask_question(question:str=Form(...)):
     
-    if not text and not textbar:
+    if not text :
         return{"error":"No text input or document given"}
-    if textbar:
-        result=qa_pipeline(question=question, context=textbar)
-        answer=result['answer']
+   
     else:
       answer=ask_agent(question,text)
     return{"answer":answer}
