@@ -1,8 +1,11 @@
 from fastapi import FastAPI,UploadFile,File,Form
 import PyPDF2
 import io
+import re
 from transformers import pipeline
 from docx import Document
+from elevenlabs import save
+from dotenv import load_dotenv
 
 app =FastAPI()
 
@@ -10,6 +13,7 @@ qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 text=""
+flashcards=[]
 def chunk_text(pages,chunk_size=400,overlaps=50):
     chunks=[]
     for page in pages:
@@ -22,7 +26,7 @@ def chunk_text(pages,chunk_size=400,overlaps=50):
             start+=chunk_size-overlaps
     return chunks
 
-def summarize_pdf_chunks(pages, chunk_size=400, overlap=50):
+def summarize_pdf_chunks(pages, chunk_size=600, overlap=50):
     chunks = chunk_text(pages, chunk_size=chunk_size, overlaps=overlap)
     summaries = []
     for chunk in chunks:
@@ -51,9 +55,15 @@ def ask_agent(question , pages):
    return best_answer , best_page
 
 def clean_page_text(page_text: str):
-    # remove author/title metadata
-    page_text = page_text.split("Submitted By:")[0]
-    # fix hyphenation and line breaks
+    page_text = re.sub(r"Submitted By:.*", "", page_text)
+    page_text = re.sub(r"Author[s]*:.*", "", page_text)
+    page_text = re.sub(r"Name[s]*:.*", "", page_text)
+    page_text = re.sub(r"Affiliation[s]*:.*", "", page_text)
+    
+    # Remove headers like 'Introduction' if you want
+    page_text = re.sub(r"^Introduction\s*", "", page_text, flags=re.IGNORECASE)
+    
+    # Fix hyphenation and line breaks
     page_text = page_text.replace("-\n", "")
     page_text = page_text.replace("\n", " ").strip()
     return page_text
@@ -67,6 +77,8 @@ def extract_docx(file: io.BytesIO):
         if para.text.strip():
             clean_para = clean_page_text(para.text)
             full_text.append(clean_para)
+        if len(clean_para.split()) < 10:
+            continue
     pages_text = [{"page": i+1, "text": para} for i, para in enumerate(full_text)]
     return pages_text
 
@@ -78,7 +90,10 @@ def extract_pdf(file:io.BytesIO):
     for i,page in enumerate(pdf_reader.pages):
         raw_page_text=page.extract_text()or" "
         clean_page=clean_page_text(raw_page_text)
+        if len(clean_page.split()) < 10:
+            continue
         pages_text.append({"page":i+1,"text":clean_page})
+
 
     return pages_text
 
@@ -117,7 +132,7 @@ async def ask_question(question:str=Form(...)):
 async def summarize_pdf_endpoint():
     if not text:
         return {"error": "No document uploaded yet"}
-    flashcards=[]
+    global flashcards
     summary = summarize_pdf_chunks(text)
     for i, page in enumerate(summary):
         
@@ -129,6 +144,13 @@ async def summarize_pdf_endpoint():
         })
 
     return {"flashcard":flashcards}
+
+#@app.post('/tts')
+#async def texttospeech():
+    #if not text:
+        #return{"error":"No document uploaded"}
+    #for i,pages in enumerate(flashcards):
+       # pass
 
 
 
