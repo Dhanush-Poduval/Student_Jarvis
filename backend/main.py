@@ -1,7 +1,7 @@
-from fastapi import FastAPI,UploadFile,File,Form
+from fastapi import FastAPI,UploadFile,File,Form,HTTPException,status
 from fastapi.responses import StreamingResponse
 import PyPDF2
-import io,os
+import io
 import re
 from transformers import pipeline
 from docx import Document
@@ -18,6 +18,7 @@ qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 text=""
+textbar=""
 flashcards=[]
 def chunk_text(pages,chunk_size=400,overlaps=50):
     chunks=[]
@@ -120,6 +121,16 @@ async def upload_pdf(file:UploadFile=File(...)):
     text=extract_pdf(pdf_file)
     preview=text[:500]
     return {'The text is ':preview}
+
+@app.post('/text')
+async def text_type(type_text:str):
+    global textbar
+    textbar=type_text
+    if len(text.split())>500:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,detail="The amount of words crossed the word limit")
+    return{"text":textbar}
+
+
 @app.post('/student_docx')
 async def upload_docx(file: UploadFile = File(...)):
     file_content = await file.read()
@@ -134,10 +145,13 @@ async def upload_docx(file: UploadFile = File(...)):
 @app.post('/ask')
 async def ask_question(question:str=Form(...)):
     
-    if not text:
-        return{"error":"No PDF uploaded yet"}
-    
-    answer =ask_agent(question,text)
+    if not text and not textbar:
+        return{"error":"No text input or document given"}
+    if textbar:
+        result=qa_pipeline(question=question, context=textbar)
+        answer=result['answer']
+    else:
+      answer=ask_agent(question,text)
     return{"answer":answer}
 
 
@@ -170,5 +184,7 @@ async def texttospeech():
   audio_bytes.seek(0)
 
   return StreamingResponse(audio_bytes,media_type="audio/mpeg")
+
+
 
 
