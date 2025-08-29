@@ -22,3 +22,8 @@ def create_user(signup:schemas.Signup , db:Session=Depends(database.get_db)):
 def get_allusers(db:Session=Depends(database.get_db)):
     users=db.query(models.User).all()
     return users
+
+@router.get('/users/{id}',response_model=schemas.Show_User)
+def get_user(id , db:Session=Depends(database.get_db)):
+   user=db.query(models.User).filter(models.User.id==id).first()
+   return user
