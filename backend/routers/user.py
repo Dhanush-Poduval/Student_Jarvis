@@ -17,3 +17,8 @@ def create_user(signup:schemas.Signup , db:Session=Depends(database.get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+@router.get('/allusers',response_model=List[schemas.Show_User])
+def get_allusers(db:Session=Depends(database.get_db)):
+    users=db.query(models.User).all()
+    return users
