@@ -3,6 +3,7 @@ from .. import models,schemas,database
 from sqlalchemy.orm import Session
 from ..database import get_db
 from typing import List
+from passlib.context import CryptContext
 
 app=FastAPI()
 
@@ -10,9 +11,13 @@ router=APIRouter(
     tags=['User']
 )
 
+pwd_context=CryptContext(schemes=["bcrypt"],deprecated="auto")
+hashedPassword=""
 @router.post('/user')
 def create_user(signup:schemas.Signup , db:Session=Depends(database.get_db)):
-    new_user=models.User(name=signup.name , email=signup.email , password=signup.password)
+    global hashedPassword
+    hashedPassword=pwd_context.hash(signup.password)
+    new_user=models.User(name=signup.name , email=signup.email , password=hashedPassword)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -30,10 +35,11 @@ def get_user(id , db:Session=Depends(database.get_db)):
 
 @router.post('/login')
 def login(user:schemas.Check_Login, db:Session=Depends(database.get_db)):
+    
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Email not found")
-    if db_user.password!=user.password:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Password not found")
+    if not pwd_context.verify(user.password, db_user.password):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="Wrong Password")
     
     return{'status':'Sucessfull','name':f"{db_user.name}"}
