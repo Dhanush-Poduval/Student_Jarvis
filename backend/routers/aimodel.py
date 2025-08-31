@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 import PyPDF2
 import io,os
 import re
+from typing import List
 from transformers import pipeline
 from docx import Document
 from gtts import gTTS
@@ -139,17 +140,20 @@ async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_d
     file_location=f"{Upload_folder}{file.filename}"
     with open(file_location,"wb") as f:
         f.write(await file.read())
-    new_doc=models.Documents(user_id=user_id,filename=file.filename,file_path=file_location)
+   
     user=db.query(models.User).filter(models.User.id==user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
-    db.add(new_doc)
-    db.commit()
-    db.refresh(new_doc)
     pdf_file=io.BytesIO(open(file_location,"rb").read())
     global text
     text=extract_pdf(pdf_file)
-    preview=text[:500]
+    full_text=" ".join([page["text"] for page in text])
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
+    new_doc=models.Documents(user_id=user_id,filename=file.filename,file_path=file_location,document_text=full_text)
+    db.add(new_doc)
+    db.commit()
+    db.refresh(new_doc)
+    
+    preview=new_doc.document_text[:500]
    
    
     
@@ -197,7 +201,7 @@ async def summarize_pdf_endpoint(user_id:int=Form(...),db:Session=Depends(databa
     doc_id=db.query(models.Documents).filter(models.Documents.id==document_id).first()
     if not doc_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No document uploaded yet")
-    summary = summarize_pdf_chunks(text)
+    summary = summarize_pdf_chunks([{"text":doc_id.document_text}])
     full_summary=" ".join(summary)
     new_summary=models.Summary(document_id=doc_id.id , summary_text=full_summary)
     db.add(new_summary)
@@ -225,6 +229,13 @@ async def texttospeech():
   audio_bytes.seek(0)
 
   return StreamingResponse(audio_bytes,media_type="audio/mpeg")
+
+@router.get('/documents',response_model=List[schemas.Document])
+def get_documents(db:Session=Depends(database.get_db)):
+    all_docs=db.query(models.Documents).all()
+
+    return all_docs
+
 
 
 

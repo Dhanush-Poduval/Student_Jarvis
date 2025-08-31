@@ -19,6 +19,7 @@ class Documents(Base):
     user_id=Column(Integer,ForeignKey("user.id"))
     filename=Column(String)
     file_path=Column(String)
+    document_text=Column(String)
     uploaded_at=Column(DateTime(timezone=True),default=lambda:datetime.now(IST))
 
 class Summary(Base):

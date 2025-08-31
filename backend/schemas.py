@@ -27,16 +27,18 @@ class Token(BaseModel):
     token_type: str
 
 
-class TokenData(BaseModel):
+class TokenData(BaseModel): #jwt
     username: Optional[str]=None
 
 class DocumentBase(BaseModel):
     filename:str
     filepath:str
+    document_text:str
     id:int
     user_id:int
 class Document(BaseModel):
     filename:str
     id:int
+    document_text:str
     class Config():
         orm_mode=True
