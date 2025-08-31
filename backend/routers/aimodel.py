@@ -140,6 +140,9 @@ async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_d
     with open(file_location,"wb") as f:
         f.write(await file.read())
     new_doc=models.Documents(user_id=user_id,filename=file.filename,file_path=file_location)
+    user=db.query(models.User).filter(models.User.id==user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
     db.add(new_doc)
     db.commit()
     db.refresh(new_doc)
@@ -147,9 +150,8 @@ async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_d
     global text
     text=extract_pdf(pdf_file)
     preview=text[:500]
-    user=db.query(models.User).filter(models.User.id==user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
+   
+   
     
     return {'document':{"id":new_doc.id,"filename":new_doc.filename , "usern name":user.name},"preview":preview}
 
