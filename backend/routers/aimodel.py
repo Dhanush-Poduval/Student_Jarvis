@@ -22,7 +22,6 @@ qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 text=""
-flashcards=[]
 def chunk_text(pages,chunk_size=100,overlaps=50):
     chunks=[]
    
@@ -207,25 +206,46 @@ async def summarize_pdf_endpoint(user_id:int=Form(...),db:Session=Depends(databa
     db.add(new_summary)
     db.commit()
     db.refresh(new_summary)
-    global flashcards
-    flashcards=[{"Point":f"Key Point{i+1}","answer":flash} for i , flash in enumerate(summary)]
+    flashcards=[]
+    for i ,flash in enumerate(summary):
+        new_flash=models.Flashcards(summary_id=new_summary.id,point=f"Point{i+1}",answer=flash)
+        db.add(new_flash)
+        flashcards.append({"Point":new_flash.point,"Answer":new_flash.answer})
+    db.commit()
+    db.refresh(new_flash)
     return{
         "document_id":doc_id.id,
         "summary_id":new_summary.id,
         "flashcards":flashcards,
         "user name":users.name
     }
+
+    
     
 
 @router.post('/tts')
-async def texttospeech():
-  if not flashcards:
-      return{"error":"No file uploaded yet"}
-  text=" ".join([f["answer"]for f in flashcards])
+async def texttospeech(user_id:int=Form(...),flash_id:int=Form(...),db:Session=Depends(database.get_db)):
+  user=db.query(models.User).filter(models.User.id==user_id).first()
+  if not user:
+      raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
+  summary = db.query(models.Summary).filter(models.Summary.id == flash_id).first()
+  if not summary:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Summary not found")
+    
+  Upload_folder="../audio/"
+  os.makedirs(Upload_folder, exist_ok=True)
+  filename = f"flashcard_{flash_id}.mp3"
+  file_path = os.path.join(Upload_folder, filename)
+ 
+  tts=gTTS(text=summary.summary_text,lang="en")
+  tts.save(file_path)
+  voice=models.Audio(flashcard_id=flash_id,audio_path=file_path)
+  db.add(voice)
+  db.commit()
+  db.refresh(voice)
 
-  tts=gTTS(text=text,lang="en")
-  audio_bytes=io.BytesIO()
-  tts.write_to_fp(audio_bytes)
+  with open(file_path, "rb") as f:
+        audio_bytes = io.BytesIO(f.read())
   audio_bytes.seek(0)
 
   return StreamingResponse(audio_bytes,media_type="audio/mpeg")
