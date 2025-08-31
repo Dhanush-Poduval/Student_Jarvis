@@ -1,11 +1,13 @@
-from fastapi import FastAPI,UploadFile,File,Form,HTTPException,status,APIRouter
+from fastapi import FastAPI,UploadFile,File,Form,HTTPException,status,APIRouter,Depends
 from fastapi.responses import StreamingResponse
 import PyPDF2
-import io
+import io,os
 import re
 from transformers import pipeline
 from docx import Document
 from gtts import gTTS
+from sqlalchemy.orm import Session
+from .. import database,schemas,models
 
 
 app =FastAPI()
@@ -131,13 +133,25 @@ def extract_pdf(file:io.BytesIO):
 
 
 @router.post('/student_pdf')
-async def upload_pdf(file:UploadFile=File(...)):
-    file_content=await file.read()
-    pdf_file=io.BytesIO(file_content)
+async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_db),user_id:int=Form(...)):
+    Upload_folder="../uploads/"
+    os.makedirs(Upload_folder, exist_ok=True)
+    file_location=f"{Upload_folder}{file.filename}"
+    with open(file_location,"wb") as f:
+        f.write(await file.read())
+    new_doc=models.Documents(user_id=user_id,filename=file.filename,file_path=file_location)
+    db.add(new_doc)
+    db.commit()
+    db.refresh(new_doc)
+    pdf_file=io.BytesIO(open(file_location,"rb").read())
     global text
     text=extract_pdf(pdf_file)
     preview=text[:500]
-    return {'The text is ':preview}
+    user=db.query(models.User).filter(models.User.id==user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
+    
+    return {'document':{"id":new_doc.id,"filename":new_doc.filename , "usern name":user.name},"preview":preview}
 
 @router.post('/text')
 async def text_type(type_text:str):

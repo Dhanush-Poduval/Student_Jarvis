@@ -32,12 +32,11 @@ class TokenData(BaseModel):
 
 class DocumentBase(BaseModel):
     filename:str
-    file_path:str
-class DocumentCreate(DocumentBase):
-    user_id:int
-class DocumentOut(DocumentBase):
+    filepath:str
     id:int
     user_id:int
-    uploaded_at:datetime
-    class Config:
+class Document(BaseModel):
+    filename:str
+    id:int
+    class Config():
         orm_mode=True
