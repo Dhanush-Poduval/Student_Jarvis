@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 class Signup(BaseModel):
     name:str
@@ -28,3 +29,15 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str]=None
+
+class DocumentBase(BaseModel):
+    filename:str
+    file_path:str
+class DocumentCreate(DocumentBase):
+    user_id:int
+class DocumentOut(DocumentBase):
+    id:int
+    user_id:int
+    uploaded_at:datetime
+    class Config:
+        orm_mode=True
