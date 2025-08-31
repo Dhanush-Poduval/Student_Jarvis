@@ -188,22 +188,30 @@ async def ask_question(question:str=Form(...)):
 
 
 @router.post('/summarize_pdf')
-async def summarize_pdf_endpoint():
+async def summarize_pdf_endpoint(user_id:int=Form(...),db:Session=Depends(database.get_db),document_id:int=Form(...)):
+    users=db.query(models.User).filter(models.User.id==user_id).first()
 
-    if not text:
-        return {"error": "No document uploaded yet"}
-    global flashcards
+    if not users :
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="User not found")
+    
+    doc_id=db.query(models.Documents).filter(models.Documents.id==document_id).first()
+    if not doc_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No document uploaded yet")
     summary = summarize_pdf_chunks(text)
-    for i, page in enumerate(summary):
-        
-        
-        flashcards.append({
-            "Point": f"Key point {i+1}",
-            "answer": page,
-            
-        })
-
-    return {"flashcard":flashcards}
+    full_summary=" ".join(summary)
+    new_summary=models.Summary(document_id=doc_id.id , summary_text=full_summary)
+    db.add(new_summary)
+    db.commit()
+    db.refresh(new_summary)
+    global flashcards
+    flashcards=[{"Point":f"Key Point{i+1}","answer":flash} for i , flash in enumerate(summary)]
+    return{
+        "document_id":doc_id.id,
+        "summary_id":new_summary.id,
+        "flashcards":flashcards,
+        "user name":users.name
+    }
+    
 
 @router.post('/tts')
 async def texttospeech():
