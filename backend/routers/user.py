@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from typing import List
 from passlib.context import CryptContext
-
+from fastapi.security import OAuth2PasswordRequestForm
 app=FastAPI()
 
 router=APIRouter(
@@ -34,9 +34,9 @@ def get_user(id , db:Session=Depends(database.get_db)):
    return user
 
 @router.post('/login')
-def login(user:schemas.Check_Login, db:Session=Depends(database.get_db)):
+def login(user:OAuth2PasswordRequestForm=Depends(), db:Session=Depends(database.get_db)):
     
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    db_user = db.query(models.User).filter(models.User.email == user.username).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Email not found")
     if not pwd_context.verify(user.password, db_user.password):
@@ -44,7 +44,7 @@ def login(user:schemas.Check_Login, db:Session=Depends(database.get_db)):
     
     
     access_token = token.create_access_token(
-        data={"sub": user.email}
+        data={"sub": user.username}
     )
     return{"Access token":access_token,"token type":"bearer"}
 

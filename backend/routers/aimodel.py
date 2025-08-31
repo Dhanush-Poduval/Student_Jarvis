@@ -8,7 +8,7 @@ from transformers import pipeline
 from docx import Document
 from gtts import gTTS
 from sqlalchemy.orm import Session
-from .. import database,schemas,models
+from .. import database,schemas,models,oauth2
 
 
 app =FastAPI()
@@ -224,22 +224,22 @@ async def summarize_pdf_endpoint(user_id:int=Form(...),db:Session=Depends(databa
     
 
 @router.post('/tts')
-async def texttospeech(user_id:int=Form(...),flash_id:int=Form(...),db:Session=Depends(database.get_db)):
+async def texttospeech(user_id:int=Form(...),summary_id:int=Form(...),db:Session=Depends(database.get_db)):
   user=db.query(models.User).filter(models.User.id==user_id).first()
   if not user:
       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
-  summary = db.query(models.Summary).filter(models.Summary.id == flash_id).first()
+  summary = db.query(models.Summary).filter(models.Summary.id == summary_id).first()
   if not summary:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Summary not found")
     
   Upload_folder="../audio/"
   os.makedirs(Upload_folder, exist_ok=True)
-  filename = f"flashcard_{flash_id}.mp3"
+  filename = f"flashcard_{summary_id}.mp3"
   file_path = os.path.join(Upload_folder, filename)
  
   tts=gTTS(text=summary.summary_text,lang="en")
   tts.save(file_path)
-  voice=models.Audio(flashcard_id=flash_id,audio_path=file_path)
+  voice=models.Audio(flashcard_id=summary_id,audio_path=file_path)
   db.add(voice)
   db.commit()
   db.refresh(voice)
@@ -251,8 +251,8 @@ async def texttospeech(user_id:int=Form(...),flash_id:int=Form(...),db:Session=D
   return StreamingResponse(audio_bytes,media_type="audio/mpeg")
 
 @router.get('/documents',response_model=List[schemas.Document])
-def get_documents(db:Session=Depends(database.get_db)):
-    all_docs=db.query(models.Documents).all()
+def get_documents(db:Session=Depends(database.get_db),current_user:schemas.User=Depends(oauth2.get_current_user)):
+    all_docs = db.query(models.Documents).filter(models.Documents.user_id == current_user.id).first()
 
     return all_docs
 
