@@ -24,5 +24,7 @@ class Documents(Base):
 class Summary(Base):
     __tablename__="summary"
     id=Column(Integer,primary_key=True,index=True)
-    user_id=Column(Integer,ForeignKey("document.id"))
+    document_id=Column(Integer,ForeignKey("documents.id"))
+    summary_text=Column(String)
+
     
