@@ -31,7 +31,6 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-
 class TokenData(BaseModel): #jwt
     email: Optional[str]=None
 
@@ -46,4 +45,22 @@ class Document(BaseModel):
     id:int
     document_text:str
     class Config():
+        orm_mode=True
+
+
+class ChatSessionBase(BaseModel):
+    title:str
+class ChatSession(ChatSessionBase):
+    id:int
+    class Config:
+        orm_mode=True
+
+class ChatHistoryBase(BaseModel):
+    question:str
+    answer:str
+
+class ChatHistory(ChatHistoryBase):
+    id:int
+    session_id:int
+    class Config:
         orm_mode=True
