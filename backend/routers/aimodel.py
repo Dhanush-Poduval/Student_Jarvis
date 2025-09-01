@@ -222,12 +222,15 @@ async def summarize_pdf_endpoint(current_user:schemas.Show_User=Depends(oauth2.g
     if not users :
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="User not found")
     
-    doc_id=db.query(models.Documents).filter(models.Documents.id==document_id).first()
-    if not doc_id:
+    doc = db.query(models.Documents).filter(
+    models.Documents.id == document_id,
+    models.Documents.user_id == current_user.id   # <--- enforce ownership
+    ).first()
+    if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No document uploaded yet")
-    summary = summarize_pdf_chunks([{"text":doc_id.document_text}])
+    summary = summarize_pdf_chunks([{"text":doc.document_text}])
     full_summary=" ".join(summary)
-    new_summary=models.Summary(document_id=doc_id.id , summary_text=full_summary,session_id=doc_id.session_id)
+    new_summary=models.Summary(document_id=doc.id , summary_text=full_summary,session_id=doc.session_id)
     db.add(new_summary)
     db.commit()
     db.refresh(new_summary)
@@ -239,7 +242,7 @@ async def summarize_pdf_endpoint(current_user:schemas.Show_User=Depends(oauth2.g
     db.commit()
     db.refresh(new_flash)
     return{
-        "document_id":doc_id.id,
+        "document_id":doc.id,
         "summary_id":new_summary.id,
         "flashcards":flashcards,
         "user name":users.name
