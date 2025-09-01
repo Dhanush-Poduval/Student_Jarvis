@@ -283,8 +283,10 @@ def chat_session(chat_title:str,db:Session=Depends(database.get_db),current_user
 
 @router.get('/chat_session',response_model=List[schemas.ChatSessionBase])
 def get_all_chats(db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
-     
-    all_chats=db.query(models.ChatSessions).all()
+    print(current_user.id)
+    all_chats=db.query(models.ChatSessions).filter(models.ChatSessions.user_id==current_user.id).all()
+    if not all_chats:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No Chats been made")
     return all_chats
 
 
