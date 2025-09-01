@@ -251,8 +251,8 @@ async def texttospeech(user_id:int=Form(...),summary_id:int=Form(...),db:Session
   return StreamingResponse(audio_bytes,media_type="audio/mpeg")
 
 @router.get('/documents',response_model=List[schemas.Document])
-def get_documents(db:Session=Depends(database.get_db),current_user:schemas.User=Depends(oauth2.get_current_user)):
-    all_docs = db.query(models.Documents).filter(models.Documents.user_id == current_user.id).first()
+def get_documents(db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
+    all_docs = db.query(models.Documents).filter(models.Documents.user_id == current_user.id).all()
 
     return all_docs
 

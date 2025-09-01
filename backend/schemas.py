@@ -7,6 +7,7 @@ class Signup(BaseModel):
     email:str
     password:str
 class Show_User(BaseModel):
+    id:int
     name:str
     email:str
     class Config():

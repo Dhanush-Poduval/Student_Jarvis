@@ -1,17 +1,18 @@
-from fastapi import Depends,HTTPException,status
-from fastapi.security import OAuth2PasswordBearer,SecurityScopes
-from . import token
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from . import token, database, models
 
-oauth2_scheme=OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
-def get_current_user( security_scopes: SecurityScopes,token1:str=Depends(oauth2_scheme)):
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
-        authenticate_value = "Bearer"
+def get_current_user(token_str: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": authenticate_value},
+        headers={"WWW-Authenticate": "Bearer"},
     )
-    return token.verify_token(token1,credentials_exception)
+    token_data = token.verify_token(token_str, credentials_exception)
+    user = db.query(models.User).filter(models.User.email == token_data.username).first()
+    if not user:
+        raise credentials_exception
+    return user
