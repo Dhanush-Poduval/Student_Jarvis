@@ -339,9 +339,35 @@ def get_all_chats(db:Session=Depends(database.get_db),current_user:schemas.Show_
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No Chats been made")
     return all_chats
 
-@router.post('/chat_history')
-def chat_history():
-    pass
+@router.get('/session_data/{session_id}')
+def get_full_session(
+    session_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: schemas.Show_User = Depends(oauth2.get_current_user)
+):
+    # Ensure the session belongs to the current user
+    session = db.query(models.ChatSessions).filter(
+        models.ChatSessions.id == session_id,
+        models.ChatSessions.user_id == current_user.id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found or access denied")
+    
+    document=db.query(models.Documents).filter(models.Documents.session_id==session_id).all()
+
+    summary=db.query(models.Summary).filter(models.Summary.session_id==session_id).all()
+
+    audio=db.query(models.Audio).filter(models.Audio.session_id==session_id).all()
+
+    question=db.query(models.ChatHistory).filter(models.ChatHistory.session_id==session_id).all()
+
+    return {
+        "session": session,
+        "documents": document,
+        "chats": question,
+        "summaries": summary,
+        "audio_files": audio
+    }
 
 
 
