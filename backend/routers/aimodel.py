@@ -21,6 +21,30 @@ router=APIRouter(
 qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
+def get_user_document(db: Session, document_id: int, user_id: int):
+    doc = db.query(models.Documents).filter(
+        models.Documents.id == document_id,
+        models.Documents.user_id == user_id
+    ).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found or access denied")
+    return doc
+
+
+def get_user_summary(db: Session, summary_id: int, user_id: int):
+    summary = (
+        db.query(models.Summary)
+        .join(models.Documents, models.Summary.document_id == models.Documents.id)
+        .filter(
+            models.Summary.id == summary_id,
+            models.Documents.user_id == user_id
+        )
+        .first()
+    )
+    if not summary:
+        raise HTTPException(status_code=404, detail="Summary not found or access denied")
+    return summary
+
 
 def chunk_text(pages,chunk_size=100,overlaps=50):
     chunks=[]
@@ -200,19 +224,30 @@ async def upload_docx(file: UploadFile = File(...),current_user:schemas.Show_Use
 
 
 @router.post('/ask')
-async def ask_question(ask_question:str=Form(...),db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user),document_id:int=Form(...)):
+async def ask_question(
+    ask_question: str = Form(...),
+    db: Session = Depends(database.get_db),
+    current_user: schemas.Show_User = Depends(oauth2.get_current_user),
+    document_id: int = Form(...)
+):
+    document = get_user_document(db, document_id, current_user.id)
     
-    document=db.query(models.Documents).filter(models.Documents.id==document_id).first()
-    if not document.document_text :
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No document or text uploaded ")
-    uploaded_text=document.document_text.split("\f")
-    final_text=[{"text":page}for page in uploaded_text if page.strip()]
-    model_answer=ask_agent(ask_question,final_text)
-    new_question=models.ChatHistory(session_id=document.session_id,question=ask_question,answer=model_answer)
+    uploaded_text = document.document_text.split("\f")
+    final_text = [{"text":page} for page in uploaded_text if page.strip()]
+    
+    model_answer = ask_agent(ask_question, final_text)
+    
+    new_question = models.ChatHistory(
+        session_id=document.session_id,
+        question=ask_question,
+        answer=model_answer
+    )
     db.add(new_question)
     db.commit()
     db.refresh(new_question)
-    return{"answer":model_answer}
+    
+    return {"answer": model_answer}
+
 
 
 @router.post('/summarize_pdf')
@@ -252,31 +287,32 @@ async def summarize_pdf_endpoint(current_user:schemas.Show_User=Depends(oauth2.g
     
 
 @router.post('/tts')
-async def texttospeech(current_user:schemas.Show_User=Depends(oauth2.get_current_user),summary_id:int=Form(...),db:Session=Depends(database.get_db)):
-  user=db.query(models.User).filter(models.User.id==current_user.id).first()
-  if not user:
-      raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
-  summary = db.query(models.Summary).filter(models.Summary.id == summary_id).first()
-  if not summary:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Summary not found")
+async def texttospeech(
+    current_user: schemas.Show_User = Depends(oauth2.get_current_user),
+    summary_id: int = Form(...),
+    db: Session = Depends(database.get_db)
+):
+    summary = get_user_summary(db, summary_id, current_user.id)
     
-  Upload_folder="../audio/"
-  os.makedirs(Upload_folder, exist_ok=True)
-  filename = f"flashcard_{summary_id}.mp3"
-  file_path = os.path.join(Upload_folder, filename)
- 
-  tts=gTTS(text=summary.summary_text,lang="en")
-  tts.save(file_path)
-  voice=models.Audio(flashcard_id=summary_id,audio_path=file_path,session_id=summary.session_id)
-  db.add(voice)
-  db.commit()
-  db.refresh(voice)
+    Upload_folder = "../audio/"
+    os.makedirs(Upload_folder, exist_ok=True)
+    filename = f"flashcard_{summary_id}.mp3"
+    file_path = os.path.join(Upload_folder, filename)
 
-  with open(file_path, "rb") as f:
+    tts = gTTS(text=summary.summary_text, lang="en")
+    tts.save(file_path)
+
+    voice = models.Audio(flashcard_id=summary_id, audio_path=file_path, session_id=summary.session_id)
+    db.add(voice)
+    db.commit()
+    db.refresh(voice)
+
+    with open(file_path, "rb") as f:
         audio_bytes = io.BytesIO(f.read())
-  audio_bytes.seek(0)
+    audio_bytes.seek(0)
 
-  return StreamingResponse(audio_bytes,media_type="audio/mpeg")
+    return StreamingResponse(audio_bytes, media_type="audio/mpeg")
+
 
 @router.get('/documents',response_model=List[schemas.Document])
 def get_documents(db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
