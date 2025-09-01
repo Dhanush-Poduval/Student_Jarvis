@@ -133,21 +133,21 @@ def extract_pdf(file:io.BytesIO):
 
 
 @router.post('/student_pdf')
-async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_db),user_id:int=Form(...)):
+async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
     Upload_folder="../uploads/"
     os.makedirs(Upload_folder, exist_ok=True)
     file_location=f"{Upload_folder}{file.filename}"
     with open(file_location,"wb") as f:
         f.write(await file.read())
    
-    user=db.query(models.User).filter(models.User.id==user_id).first()
+    user=db.query(models.User).filter(models.User.id==current_user.id).first()
     pdf_file=io.BytesIO(open(file_location,"rb").read())
     global text
     text=extract_pdf(pdf_file)
     full_text=" ".join([page["text"] for page in text])
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
-    new_doc=models.Documents(user_id=user_id,filename=file.filename,file_path=file_location,document_text=full_text)
+    new_doc=models.Documents(user_id=current_user.id,filename=file.filename,file_path=file_location,document_text=full_text)
     db.add(new_doc)
     db.commit()
     db.refresh(new_doc)
@@ -191,8 +191,8 @@ async def ask_question(question:str=Form(...)):
 
 
 @router.post('/summarize_pdf')
-async def summarize_pdf_endpoint(user_id:int=Form(...),db:Session=Depends(database.get_db),document_id:int=Form(...)):
-    users=db.query(models.User).filter(models.User.id==user_id).first()
+async def summarize_pdf_endpoint(current_user:schemas.Show_User=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db),document_id:int=Form(...)):
+    users=db.query(models.User).filter(models.User.id==current_user.id).first()
 
     if not users :
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="User not found")
@@ -224,8 +224,8 @@ async def summarize_pdf_endpoint(user_id:int=Form(...),db:Session=Depends(databa
     
 
 @router.post('/tts')
-async def texttospeech(user_id:int=Form(...),summary_id:int=Form(...),db:Session=Depends(database.get_db)):
-  user=db.query(models.User).filter(models.User.id==user_id).first()
+async def texttospeech(current_user:schemas.Show_User=Depends(oauth2.get_current_user),summary_id:int=Form(...),db:Session=Depends(database.get_db)):
+  user=db.query(models.User).filter(models.User.id==current_user.id).first()
   if not user:
       raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
   summary = db.query(models.Summary).filter(models.Summary.id == summary_id).first()

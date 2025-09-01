@@ -12,10 +12,10 @@ router=APIRouter(
 )
 
 pwd_context=CryptContext(schemes=["bcrypt"],deprecated="auto")
-hashedPassword=""
+
 @router.post('/user')
 def create_user(signup:schemas.Signup , db:Session=Depends(database.get_db)):
-    global hashedPassword
+    hashedPassword=""
     hashedPassword=pwd_context.hash(signup.password)
     new_user=models.User(name=signup.name , email=signup.email , password=hashedPassword)
     db.add(new_user)
@@ -46,7 +46,7 @@ def login(user:OAuth2PasswordRequestForm=Depends(), db:Session=Depends(database.
     access_token = token.create_access_token(
         data={"sub": user.username}
     )
-    return{"Access token":access_token,"token type":"bearer"}
+    return{"access_token":access_token,"token_type":"bearer"}
 
 
 

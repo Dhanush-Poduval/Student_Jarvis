@@ -33,7 +33,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel): #jwt
-    username: Optional[str]=None
+    email: Optional[str]=None
 
 class DocumentBase(BaseModel):
     filename:str

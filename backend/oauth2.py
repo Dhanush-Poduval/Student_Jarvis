@@ -12,7 +12,8 @@ def get_current_user(token_str: str = Depends(oauth2_scheme), db: Session = Depe
         headers={"WWW-Authenticate": "Bearer"},
     )
     token_data = token.verify_token(token_str, credentials_exception)
-    user = db.query(models.User).filter(models.User.email == token_data.username).first()
+    user = db.query(models.User).filter(models.User.email == token_data.email).first()
     if not user:
+        print(f"Token email is :{token_data.email}")
         raise credentials_exception
     return user

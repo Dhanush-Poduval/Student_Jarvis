@@ -23,7 +23,7 @@ def verify_token(token1:str,credentials_exception):
         email:str=payload.get("sub")
         if email is None:
             raise credentials_exception
-        token_data=schemas.TokenData(username=email)
+        token_data=schemas.TokenData(email=email)
         return token_data
     except JWTError:
          raise credentials_exception
