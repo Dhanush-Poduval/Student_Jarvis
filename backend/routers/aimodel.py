@@ -281,6 +281,13 @@ def chat_session(chat_title:str,db:Session=Depends(database.get_db),current_user
     return {"title":new_chat_session.title,"user":current_user.name,"id":new_chat_session.id}
 
 
+@router.get('/chat_session',response_model=List[schemas.ChatSessionBase])
+def get_all_chats(db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
+     
+    all_chats=db.query(models.ChatSessions).all()
+    return all_chats
+
+
 
 
 
