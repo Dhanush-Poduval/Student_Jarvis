@@ -169,14 +169,28 @@ async def text_type(type_text:str):
 
 
 @router.post('/student_docx')
-async def upload_docx(file: UploadFile = File(...)):
-    file_content = await file.read()
-    docx_file = io.BytesIO(file_content)
+async def upload_docx(file: UploadFile = File(...),current_user:schemas.Show_User=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+    Upload_folder="../uploads/"
+    os.makedirs(Upload_folder, exist_ok=True)
+    file_location=f"{Upload_folder}{file.filename}"
+    with open(file_location,"wb") as f:
+        f.write(await file.read())
+    user=db.query(models.User).filter(models.User.id==current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
+    file_content=io.BytesIO(open(file_location,"rb").read())
+    
     global text
-    text = extract_docx(docx_file)
-    preview = text[:500]
+    text = extract_docx(file_content)
+    full_text=" ".join(d["text"]for d in text)
+    new_doc=models.Documents(user_id=current_user.id,filename=file.filename,file_path=file_location,document_text=full_text)
+    db.add(new_doc)
+    db.commit()
+    db.refresh(new_doc)
+    
+    preview=new_doc.document_text[:500]
    
-    return {"The text is": preview}
+    return {'document':{"id":new_doc.id,"filename":new_doc.filename , "usern name":user.name},"preview":preview}
 
 
 @router.post('/ask')
