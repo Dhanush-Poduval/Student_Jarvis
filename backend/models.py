@@ -36,6 +36,7 @@ class Documents(Base):
     file_path=Column(String)
     document_text=Column(String)
     uploaded_at=Column(DateTime(timezone=True),default=lambda:datetime.now(IST))
+    session = relationship("ChatSessions", back_populates="documents")
 
 class Summary(Base):
     __tablename__="summary"
@@ -43,6 +44,7 @@ class Summary(Base):
     document_id=Column(Integer,ForeignKey("documents.id"))
     summary_text=Column(Text)
     session_id=Column(Integer,ForeignKey("chat_sessions.id"))
+    session = relationship("ChatSessions", back_populates="summary")
 
 class Flashcards(Base):
     __tablename__="flashcard"
@@ -52,12 +54,14 @@ class Flashcards(Base):
     answer=Column(String)
     session_id=Column(Integer,ForeignKey("chat_sessions.id"))
 
+
 class Audio(Base):
     __tablename__="audio"
     id=Column(Integer,primary_key=True,index=True)
     flashcard_id=Column(Integer,ForeignKey("flashcard.id"))
     audio_path=Column(String)
     session_id=Column(Integer,ForeignKey("chat_sessions.id"))
+    session = relationship("ChatSessions", back_populates="audio_files")
 
     
 

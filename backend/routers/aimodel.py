@@ -21,7 +21,7 @@ router=APIRouter(
 qa_pipeline=pipeline("question-answering",model="deepset/roberta-large-squad2")
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
-text=""
+
 def chunk_text(pages,chunk_size=100,overlaps=50):
     chunks=[]
    
@@ -133,21 +133,23 @@ def extract_pdf(file:io.BytesIO):
 
 
 @router.post('/student_pdf')
-async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
+async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user),chat_session:int=Form(...)):
     Upload_folder="../uploads/"
     os.makedirs(Upload_folder, exist_ok=True)
     file_location=f"{Upload_folder}{file.filename}"
     with open(file_location,"wb") as f:
         f.write(await file.read())
-   
+    
     user=db.query(models.User).filter(models.User.id==current_user.id).first()
+    chat_session=db.query(models.ChatSessions).filter(models.ChatSessions.id==chat_session).first()
     pdf_file=io.BytesIO(open(file_location,"rb").read())
-    global text
     text=extract_pdf(pdf_file)
     full_text=" ".join([page["text"] for page in text])
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
-    new_doc=models.Documents(user_id=current_user.id,filename=file.filename,file_path=file_location,document_text=full_text)
+    if not chat_session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="no chat session created")
+    new_doc=models.Documents(user_id=current_user.id,filename=file.filename,session_id=chat_session.id, file_path=file_location,document_text=full_text)
     db.add(new_doc)
     db.commit()
     db.refresh(new_doc)
@@ -169,7 +171,7 @@ async def text_type(type_text:str):
 
 
 @router.post('/student_docx')
-async def upload_docx(file: UploadFile = File(...),current_user:schemas.Show_User=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db)):
+async def upload_docx(file: UploadFile = File(...),current_user:schemas.Show_User=Depends(oauth2.get_current_user),db:Session=Depends(database.get_db),session_id:int=Form(...)):
     Upload_folder="../uploads/"
     os.makedirs(Upload_folder, exist_ok=True)
     file_location=f"{Upload_folder}{file.filename}"
@@ -179,11 +181,15 @@ async def upload_docx(file: UploadFile = File(...),current_user:schemas.Show_Use
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")
     file_content=io.BytesIO(open(file_location,"rb").read())
+
+    new_chat=db.query(models.ChatSessions).filter(models.ChatSessions.id==session_id).first()
+    if not new_chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No chat session created")
     
     global text
     text = extract_docx(file_content)
     full_text=" ".join(d["text"]for d in text)
-    new_doc=models.Documents(user_id=current_user.id,filename=file.filename,file_path=file_location,document_text=full_text)
+    new_doc=models.Documents(user_id=current_user.id,filename=file.filename,session_id=new_chat.id ,file_path=file_location,document_text=full_text)
     db.add(new_doc)
     db.commit()
     db.refresh(new_doc)
@@ -216,7 +222,7 @@ async def summarize_pdf_endpoint(current_user:schemas.Show_User=Depends(oauth2.g
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No document uploaded yet")
     summary = summarize_pdf_chunks([{"text":doc_id.document_text}])
     full_summary=" ".join(summary)
-    new_summary=models.Summary(document_id=doc_id.id , summary_text=full_summary)
+    new_summary=models.Summary(document_id=doc_id.id , summary_text=full_summary,session_id=doc_id.session_id)
     db.add(new_summary)
     db.commit()
     db.refresh(new_summary)
@@ -253,7 +259,7 @@ async def texttospeech(current_user:schemas.Show_User=Depends(oauth2.get_current
  
   tts=gTTS(text=summary.summary_text,lang="en")
   tts.save(file_path)
-  voice=models.Audio(flashcard_id=summary_id,audio_path=file_path)
+  voice=models.Audio(flashcard_id=summary_id,audio_path=file_path,session_id=summary.session_id)
   db.add(voice)
   db.commit()
   db.refresh(voice)
