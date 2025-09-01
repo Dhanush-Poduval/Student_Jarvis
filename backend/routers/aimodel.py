@@ -200,14 +200,19 @@ async def upload_docx(file: UploadFile = File(...),current_user:schemas.Show_Use
 
 
 @router.post('/ask')
-async def ask_question(question:str=Form(...)):
+async def ask_question(ask_question:str=Form(...),db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user),document_id:int=Form(...)):
     
-    if not text :
-        return{"error":"No text input or document given"}
-   
-    else:
-      answer=ask_agent(question,text)
-    return{"answer":answer}
+    document=db.query(models.Documents).filter(models.Documents.id==document_id).first()
+    if not document.document_text :
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No document or text uploaded ")
+    uploaded_text=document.document_text.split("\f")
+    final_text=[{"text":page}for page in uploaded_text if page.strip()]
+    model_answer=ask_agent(ask_question,final_text)
+    new_question=models.ChatHistory(session_id=document.session_id,question=ask_question,answer=model_answer)
+    db.add(new_question)
+    db.commit()
+    db.refresh(new_question)
+    return{"answer":model_answer}
 
 
 @router.post('/summarize_pdf')
@@ -298,7 +303,6 @@ def get_all_chats(db:Session=Depends(database.get_db),current_user:schemas.Show_
 @router.post('/chat_history')
 def chat_history():
     pass
-
 
 
 
