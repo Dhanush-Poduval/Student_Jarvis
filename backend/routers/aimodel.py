@@ -289,6 +289,9 @@ def get_all_chats(db:Session=Depends(database.get_db),current_user:schemas.Show_
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No Chats been made")
     return all_chats
 
+@router.post('/chat_history')
+def chat_history():
+    pass
 
 
 
