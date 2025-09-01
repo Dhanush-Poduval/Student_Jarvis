@@ -1,6 +1,7 @@
 from .database import Base
 from sqlalchemy import Column,Integer,String,ForeignKey,DateTime,Text
 from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import relationship
 
 IST=timezone(timedelta(hours=5,minutes=30))
 
@@ -11,6 +12,7 @@ class User(Base):
     name=Column(String)
     email=Column(String , unique=True)
     password=Column(String,nullable=False)
+    chat_sessions=relationship("ChatSessions",back_populates="user")
 
 
 class Documents(Base):
@@ -40,4 +42,23 @@ class Audio(Base):
     id=Column(Integer,primary_key=True,index=True)
     flashcard_id=Column(Integer,ForeignKey("flashcard.id"))
     audio_path=Column(String)
+
+class ChatSessions(Base):
+    __tablename__="chat_sessions"
+    id=Column(Integer,primary_key=True,index=True)
+    user_id=Column(Integer,ForeignKey("user.id"))
+    title=Column(String,nullable=False)
+    
+    user=relationship("User",back_populates="chat_sessions")
+    messages=relationship("ChatHistory",back_populates="session",cascade="all, delete")
+
+
+class ChatHistory(Base):
+    __tablename__="chat_history"
+    id=Column(Integer,primary_key=True,index=True)
+    session_id=Column(Integer,ForeignKey("chat_sessions.id"))
+    question=Column(Text,nullable=False)
+    answer=Column(Text,nullable=False)
+    
+    session=relationship("ChatSessions",back_populates="messages")
     
