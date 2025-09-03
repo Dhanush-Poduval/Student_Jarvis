@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { useState } from "react"
@@ -67,7 +68,10 @@ export function Login() {
           Enter your email below to login to your account
         </CardDescription>
         <CardAction>
-          <Button variant="link">Sign Up</Button>
+            <Link href="/signup">
+               <Button variant="/signup">Sign Up</Button>
+            </Link>
+          
         </CardAction>
       </CardHeader>
       <CardContent>
