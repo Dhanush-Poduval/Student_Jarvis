@@ -11,12 +11,14 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useRouter } from "next/navigation"
+
 import { useState } from "react"
 
 export function Login() {
-    const [login , setLogin]=useState("")
     const [email,setEmail]=useState("")
     const [password,setPassword]=useState("")
+    const router=useRouter()
     const handlemail=(e)=>{
         const text=e.target.value;
         setEmail(text)
@@ -29,23 +31,27 @@ export function Login() {
         console.log(text)
 
     }
-    const handlesubmit=async()=>{
+    const handlesubmit=async(e)=>{
+        e.preventDefault()
       try{
         const res=await fetch("http://127.0.0.1:8000/login",{
             method:"POST",
             headers:{
-                'Content-Type':'application/json'
+                'Content-Type':'application/x-www-form-urlencoded'
             },
-            body:JSON.stringify({
-                "email":email,
-                "password":password
+            body:new URLSearchParams({
+                username:email,
+                password:password
             })
             
         })
         const data=await res.json()
         console.log("JWT Token",data.access_token)
         localStorage.setItem("token",data.access_token)
-        window.location.href="/dashboard"
+        
+        router.push("/dashboard")
+        
+        
         
       }catch(error){
         console.log("error",error)
