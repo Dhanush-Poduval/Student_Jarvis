@@ -49,8 +49,9 @@ export default function Signup() {
                 "password":password
             })})
         const data=await res.json()
-        console.log(data)
-        router.push('/')
+        console.log("access token is",data.access_token)
+        localStorage.setItem("token",data.access_token)
+        router.push('/dashboard')
       }catch(error){
         console.log("error",error)
       }
