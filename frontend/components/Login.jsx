@@ -31,15 +31,25 @@ export function Login() {
     }
     const handlesubmit=async()=>{
       try{
-        const res=await fetch("htt[://127.0.0.1:8000",{
+        const res=await fetch("http://127.0.0.1:8000/login",{
             method:"POST",
             headers:{
-                'Content-Type':'applications/json'
+                'Content-Type':'application/json'
             },
-            body:JSON.stringify({text:email})
+            body:JSON.stringify({
+                "email":email,
+                "password":password
+            })
+            
         })
+        const data=await res.json()
+        console.log("JWT Token",data.access_token)
+        localStorage.setItem("token",data.access_token)
+        window.location.href="/dashboard"
         
-      }catch{
+      }catch(error){
+        console.log("error",error)
+        alert("INvalid Credentials")
 
       }
     }
@@ -80,13 +90,15 @@ export function Login() {
               <Input id="password" type="password" required onChange={handlepassword}/>
             </div>
           </div>
+          <div className="flex-col gap-2">
+            <Button type="submit" className="w-full">
+                Login
+            </Button>
+            
+          </div>
+       
         </form>
       </CardContent>
-      <CardFooter className="flex-col gap-2">
-        <Button type="submit" className="w-full">
-          Login
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
