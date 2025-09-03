@@ -20,8 +20,10 @@ def create_user(signup:schemas.Signup , db:Session=Depends(database.get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
-
+    access_token=token.create_access_token(
+        data={"sub":new_user.email}
+    )
+    return{"access_token":access_token,"token_type":"bearer"}
 @router.get('/allusers',response_model=List[schemas.Show_User])
 def get_allusers(db:Session=Depends(database.get_db)):
     users=db.query(models.User).all()
