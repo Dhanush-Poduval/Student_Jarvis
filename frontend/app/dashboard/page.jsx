@@ -1,7 +1,8 @@
+import Navbar from '@/components/dashboard/Navbar'
 import React from 'react'
 
 export default function page() {
   return (
-    <div>dashboard page</div>
+    <div><Navbar /></div>
   )
 }
