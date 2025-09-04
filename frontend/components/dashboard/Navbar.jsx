@@ -1,10 +1,13 @@
+'use client'
 import React from 'react'
 import Link from 'next/link'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem ,DropdownMenuTrigger,DropdownMenuSeparator} from '../ui/dropdown-menu'
 import { Button } from '../ui/button'
 import { Moon, Sun, User ,Settings,LogOut} from 'lucide-react'
+import { useTheme } from 'next-themes'
 
 export default function Navbar() {
+    const {setTheme}=useTheme()
   return (
     <div className='w-full px-4 py-2 border-b ml-0'>
         <div className='w-full mx-auto flex justify-between items-center ml-5 px-0 py-0'>
@@ -20,13 +23,15 @@ export default function Navbar() {
                         </Button>
                     </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={()=>setTheme("light")}>
                                 Light
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={()=>setTheme("dark")}>
                                 Dark
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={()=>
+                                setTheme("system")
+                            }>
                                 System
                             </DropdownMenuItem>
                         </DropdownMenuContent>
