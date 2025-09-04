@@ -1,8 +1,8 @@
 import React from 'react'
 import Link from 'next/link'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem ,DropdownMenuTrigger} from '../ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem ,DropdownMenuTrigger,DropdownMenuSeparator} from '../ui/dropdown-menu'
 import { Button } from '../ui/button'
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, User ,Settings,LogOut} from 'lucide-react'
 
 export default function Navbar() {
   return (
@@ -18,6 +18,7 @@ export default function Navbar() {
                             <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
                             <span className='sr-only'>Theme</span>
                         </Button>
+                    </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             <DropdownMenuItem>
                                 Light
@@ -29,8 +30,25 @@ export default function Navbar() {
                                 System
                             </DropdownMenuItem>
                         </DropdownMenuContent>
-                    </DropdownMenuTrigger>
+                   
                 </DropdownMenu>
+                 <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                        <Button>
+                            <User />
+                        </Button>
+                        
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem>
+                            <User className='mr-2'/> Profile
+                        </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                        <DropdownMenuItem><Settings className="mr-2" /> Settings</DropdownMenuItem>
+                        <DropdownMenuItem><LogOut className="mr-2" /> Logout</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                
             </div>
         </div>
     </div>
