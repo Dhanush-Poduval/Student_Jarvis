@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { Plus, Text } from 'lucide-react'
 const chats=[
         {number:"1",title:"First Chat",icon:Text},
-        {number:"1",title:"First Chat",icon:Text},
-        {number:"1",title:"First Chat",icon:Text},
-        {number:"1",title:"First Chat",icon:Text},
-        {number:"1",title:"First Chat",icon:Text},
-       {number:"1",title:"First Chat",icon:Text},
+        {number:"2",title:"First Chat",icon:Text},
+        {number:"3",title:"First Chat",icon:Text},
+        {number:"4",title:"First Chat",icon:Text},
+        {number:"5",title:"First Chat",icon:Text},
+       {number:"6",title:"First Chat",icon:Text},
     ]
 export default function AppSidebar() {
     const [chat]=useState(true);
@@ -21,24 +21,32 @@ export default function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <Link href={"/dashaboard"}>
-                          < Plus/>
+                        <div className='flex flex-row gap-3 items-center mt-3'>
+                          <Plus/>
                           <span>New Chat</span>
+
+                        </div>
+                         
                         </Link>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarSeparator />
-            <SidebarContent>
+            <SidebarContent className="mt-10">
                 <SidebarGroup>
                     <SidebarGroupLabel>
                         <SidebarGroupContent>
-                            <SidebarMenu>
+                            <SidebarMenu className="mt-10">
                                 {chat?chats.map(chits=>(
-                                <SidebarMenuItem key={chits.number}>
-                                    <SidebarMenuButton>
+                                <SidebarMenuItem  key={chits.number}>
+                                    <SidebarMenuButton asChild>
                                     <Link href="/dashboard">
+                                    <div className='flex flex-row gap-3 items-center justify-center'>
                                     <chits.icon />
                                     <span>{chits.title}</span>
+
+                                    </div>
+                                   
                                     </Link>
 
                                     </SidebarMenuButton>
@@ -47,7 +55,7 @@ export default function AppSidebar() {
                                 
 
 
-                            )):(<SidebarMenuItem>
+                            )):(<SidebarMenuItem className="mt-20">
                                 <span className='font-bold text-center text-3xl'>No chats created yet!!</span>
                             </SidebarMenuItem>)}
                             </SidebarMenu>
