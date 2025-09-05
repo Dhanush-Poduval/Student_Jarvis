@@ -21,6 +21,7 @@ export default function AppSidebar() {
         });
         const data = await res.json();
         setChats(data);
+        localStorage.setItem('chat_session',data[0].id)
       } catch (error) {
         console.log("Error:", error);
       }
@@ -42,6 +43,7 @@ export default function AppSidebar() {
       const data = await res.json();
       setChats(prev => [data, ...(Array.isArray(prev) ? prev : [])]);
       setTitleMenu(false);
+      localStorage.setItem('chat_session', data.id)
       
     } catch (error) {
       console.log("Error", error);

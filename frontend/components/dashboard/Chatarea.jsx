@@ -13,9 +13,15 @@ export default function ChatSection() {
   const scrollRef = useRef(null)
   const pdfReciever=async(e)=>{
     const token =localStorage.getItem('token')
+    const chat_id=localStorage.getItem('chat_session')
     const file=e.target.files[0];
     const formData=new FormData()
     formData.append("file",file)
+    formData.append("chat_session",chat_id)
+    console.log(chat_id)
+    if (!chat_id){
+        alert("Please select or create a chat")
+    }
     try{
        const res=await fetch('http://127.0.0.1:8000/student_pdf',{
         method:'POST',
@@ -26,6 +32,7 @@ export default function ChatSection() {
        })
        const data=await res.json()
        setfileID(data.id)
+       console.log(data.id)
 
     }catch(error){
         console.log("Error : ",error)
@@ -73,7 +80,7 @@ export default function ChatSection() {
   <div className="flex p-4 border-t gap-2 absolute bottom-20 left-0 w-full items-center">
     <Plus onClick={()=>setPlus(!plus)}/>
     <div>
-        {plus?(<Input type="file" accept=".pdf,.docx"/>):''}
+        {plus?(<Input type="file" accept=".pdf,.docx" onChange={pdfReciever}/>):''}
     </div>
     <Input
       type="text"
