@@ -165,7 +165,7 @@ async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_d
         f.write(await file.read())
     
     user=db.query(models.User).filter(models.User.id==current_user.id).first()
-    chat_session=db.query(models.ChatSessions).filter(models.ChatSessions.id==chat_session).first()
+    chat_session=db.query(models.ChatSessions).filter(models.ChatSessions.id==chat_session,models.ChatSessions.user_id==current_user.id).first()
     pdf_file=io.BytesIO(open(file_location,"rb").read())
     text=extract_pdf(pdf_file)
     full_text=" ".join([page["text"] for page in text])

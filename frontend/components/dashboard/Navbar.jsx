@@ -22,19 +22,19 @@ export default function Navbar() {
                             <span className='sr-only'>Theme</span>
                         </Button>
                     </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={()=>setTheme("light")}>
+                    <DropdownMenuContent>
+                            <DropdownMenuItem onClick={()=>{setTheme("light")}}>
                                 Light
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={()=>setTheme("dark")}>
+                            <DropdownMenuItem onClick={()=>{setTheme("dark")}}>
                                 Dark
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={()=>
-                                setTheme("system")
+                            <DropdownMenuItem onClick={()=>{
+                                setTheme("system")}
                             }>
                                 System
                             </DropdownMenuItem>
-                        </DropdownMenuContent>
+                    </DropdownMenuContent>
                    
                 </DropdownMenu>
                  <DropdownMenu>
