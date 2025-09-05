@@ -1,18 +1,55 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Sidebar,SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarSeparator } from '../ui/sidebar'
 import Link from 'next/link'
 import { Plus, Text } from 'lucide-react'
-const chats=[
-        {number:"1",title:"First Chat",icon:Text},
-        {number:"2",title:"First Chat",icon:Text},
-        {number:"3",title:"First Chat",icon:Text},
-        {number:"4",title:"First Chat",icon:Text},
-        {number:"5",title:"First Chat",icon:Text},
-       {number:"6",title:"First Chat",icon:Text},
-    ]
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
+
 export default function AppSidebar() {
-    const [chat]=useState(true);
+    const [chats,setChats]=useState([]);
+    const [titleMenue,setttitleMenue]=useState()
+    const [title,setTitle]=useState("");
+    const ref=useRef();
+    useEffect(()=>{
+        async function fecthChats() {
+            const  token=localStorage.getItem('token')
+            try{
+                const res=await fetch('http://127.0.0.1:8000/chat_session',{
+                    headers:{
+                        Authorization:`Bearer ${token}`
+                    }
+                })
+                const data=await res.json()
+                setChats(data)
+            }catch(error){
+                console.log("Error : ",error)
+            }
+        }
+        fecthChats()
+    },[])
+    const createChats=async()=>{
+       const token =localStorage.getItem("token")
+       try{
+        const res =await fetch("http://127.0.0.1:8000/chat_session",{
+            method:'POST',
+            headers:{
+                'Content-Type':'application/x-www-form-urlencoded',
+                Authorization:`Bearer ${token}`
+            },
+            body:new URLSearchParams({
+                chat_title:title
+            })
+        })
+        const data=await res.json()
+        setChats(prev=>[data,...prev])
+        setttitleMenue(false)
+
+       }catch(error){
+         console.log("Error",error)
+       }
+    }
+  
    
   return (
     <div>
@@ -20,14 +57,31 @@ export default function AppSidebar() {
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <Link href={"/dashaboard"}>
-                        <div className='flex flex-row gap-3 items-center mt-3'>
-                          <Plus/>
-                          <span>New Chat</span>
+                        
+                        <div className=''>
+                            <div className='flex flex-row gap-3 items-center mt-3'>
+                            <Plus/>
+                          <span onClick={()=>setttitleMenue(true)}>New Chat</span>
+
+                            </div>
+                          
+                          <div className='flex flex-col gap-5 items-center justify-start'>
+                            {titleMenue?(<div className='flex flex-col gap-4 items-center justify-end'>
+                            <Input
+                            id="title"
+                            placeholder="Enter Chat Title"
+                            required
+                            onChange={(e)=>{const text=e.target.value
+                            setTitle(text)
+                            console.log(text)
+                            }}
+                            /><Button onClick={createChats}>Create Chat</Button>
+                            </div>):""}
+                          </div>
 
                         </div>
                          
-                        </Link>
+                       
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
@@ -37,12 +91,12 @@ export default function AppSidebar() {
                     <SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu className="mt-10">
-                                {chat?chats.map(chits=>(
+                                {chats.length>0?chats.map(chits=>(
                                 <SidebarMenuItem  key={chits.number}>
                                     <SidebarMenuButton asChild>
                                     <Link href="/dashboard">
                                     <div className='flex flex-row gap-3 items-center justify-center'>
-                                    <chits.icon />
+                                    <Text />
                                     <span>{chits.title}</span>
 
                                     </div>

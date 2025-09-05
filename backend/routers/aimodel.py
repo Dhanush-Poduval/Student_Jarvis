@@ -322,7 +322,7 @@ def get_documents(db:Session=Depends(database.get_db),current_user:schemas.Show_
 
 
 @router.post('/chat_session')
-def chat_session(chat_title:str,db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
+def chat_session(chat_title:str=Form(...),db:Session=Depends(database.get_db),current_user:schemas.Show_User=Depends(oauth2.get_current_user)):
     new_chat_session=models.ChatSessions(user_id=current_user.id,title=chat_title)
     db.add(new_chat_session)
     db.commit()
