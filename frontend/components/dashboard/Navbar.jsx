@@ -5,13 +5,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem ,DropdownMenuTrigge
 import { Button } from '../ui/button'
 import { Moon, Sun, User ,Settings,LogOut} from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { SidebarTrigger } from '../ui/sidebar'
 
 export default function Navbar() {
     const {setTheme}=useTheme()
   return (
     <div className='w-full px-4 py-2 border-b ml-0'>
         <div className='w-full mx-auto flex justify-between items-center ml-5 px-0 py-0'>
-            <p>Content collapse</p>
+            <SidebarTrigger className='ml-0'/>
             <div className='flex flex-row items-center justify-end gap-3 mr-5'>
                 <Link href="/">Home</Link>
                 <DropdownMenu>
