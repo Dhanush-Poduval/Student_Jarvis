@@ -1,14 +1,36 @@
 'use client'
 import React, { useState, useRef, useEffect } from 'react'
+import { Input } from '../ui/input'
+import { Plus } from 'lucide-react'
 
 export default function ChatSection() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hey! Ask me anything about your PDF.' }
   ])
+  const[plus,setPlus]=useState(false)
+  const [fileID,setfileID]=useState(null)
   const [input, setInput] = useState('')
   const scrollRef = useRef(null)
+  const pdfReciever=async(e)=>{
+    const token =localStorage.getItem('token')
+    const file=e.target.files[0];
+    const formData=new FormData()
+    formData.append("file",file)
+    try{
+       const res=await fetch('http://127.0.0.1:8000/student_pdf',{
+        method:'POST',
+        headers:{
+            Authorization:`Bearer ${token}`
+        },
+        body: formData 
+       })
+       const data=await res.json()
+       setfileID(data.id)
 
-  
+    }catch(error){
+        console.log("Error : ",error)
+    }
+  }
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -31,7 +53,7 @@ export default function ChatSection() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col">
      
       <div className="flex flex-col h-screen relative">
   <div className="flex-1 p-4 pb-24 overflow-y-auto flex flex-col gap-2">
@@ -48,8 +70,12 @@ export default function ChatSection() {
     <div ref={scrollRef} />
   </div>
 
-  <div className="flex p-4 border-t gap-2 absolute bottom-30 left-0 w-full">
-    <input
+  <div className="flex p-4 border-t gap-2 absolute bottom-20 left-0 w-full items-center">
+    <Plus onClick={()=>setPlus(!plus)}/>
+    <div>
+        {plus?(<Input type="file" accept=".pdf,.docx"/>):''}
+    </div>
+    <Input
       type="text"
       value={input}
       onChange={e => setInput(e.target.value)}
