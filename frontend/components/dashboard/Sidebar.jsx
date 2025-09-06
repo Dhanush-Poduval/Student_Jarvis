@@ -21,7 +21,6 @@ export default function AppSidebar() {
         });
         const data = await res.json();
         setChats(data);
-        localStorage.setItem('chat_session',data[0].id)
       } catch (error) {
         console.log("Error:", error);
       }
@@ -91,7 +90,7 @@ export default function AppSidebar() {
               {chats.length > 0 ? (
                 chats.map(chat => (
                   <SidebarMenuItem key={chat.id || chat.number}>
-                    <Link href="/dashboard">
+                    <Link href={`/dashboard/${chat.id}`} onClick={()=>localStorage.setItem("chat_session",chat.id)}>
                       <div className="flex items-center gap-2 p-2 rounded cursor-pointer">
                         <Text size={16} />
                         <span className="truncate">{chat.title}</span>

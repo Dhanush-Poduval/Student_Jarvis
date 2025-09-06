@@ -49,6 +49,7 @@ class Document(BaseModel):
 
 
 class ChatSessionBase(BaseModel):
+    id:int
     title:str
     user_id:int
 class ChatSession(ChatSessionBase):
