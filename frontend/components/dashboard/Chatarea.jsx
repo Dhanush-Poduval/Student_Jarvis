@@ -7,8 +7,10 @@ export default function ChatSection() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hey! Ask me anything about your PDF.' }
   ])
+  const[summarize,setSummarize]=useState("")
+  const [summaryID,setsummaryID]=useState(null)
   const[plus,setPlus]=useState(false)
-  const [fileID,setfileID]=useState(null)
+  const [fileID,setfileID]=useState()
   const [input, setInput] = useState('')
   const scrollRef = useRef(null)
   const pdfReciever=async(e)=>{
@@ -41,6 +43,32 @@ export default function ChatSection() {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+  
+  async function summary() {
+    const token=localStorage.getItem('token')
+    console.log(fileID)
+    try{
+      const res=await fetch('http://127.0.0.1:8000/summarize_pdf',{
+        method:'POST',
+        headers:{
+          Authorization:`Bearer ${token}`,
+          'Content-Type':'application/x-www-form-urlencoded'
+        },
+        body:new URLSearchParams({
+         document_id:fileID
+        
+        })
+      })
+      
+      const data=await res.json()
+      console.log("Uploade the document :",data)
+      console.log("flashcards:",data.flashcards)
+      setSummarize(data.flashcards.map(f=>`${f.Point}:${f.Answer}`).join("\n"))
+      setsummaryID(data.summary_id)
+    }catch(error){
+      console.log("Error : ",error)
+    }
+  }
 
   const sendMessage = () => {
     const text = input.trim()
@@ -74,6 +102,11 @@ export default function ChatSection() {
         {msg.content}
       </div>
     ))}
+    {summarize?( <div className="p-4  rounded-lg whitespace-pre-wrap">
+            <strong>📌 Summary:</strong>
+            <br />
+            {summarize}
+          </div>) :""}
     <div ref={scrollRef} />
   </div>
 
@@ -95,6 +128,9 @@ export default function ChatSection() {
       className="px-4 py-2 rounded-lg border"
     >
       Send
+    </button>
+    <button  onClick={summary} className="px-4 py-2 rounded-lg border bg-green-200">
+      Summarize
     </button>
   </div>
 </div>

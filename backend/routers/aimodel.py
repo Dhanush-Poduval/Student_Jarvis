@@ -182,7 +182,7 @@ async def upload_pdf(file:UploadFile=File(...),db:Session=Depends(database.get_d
    
    
     
-    return {'document':{"id":new_doc.id,"filename":new_doc.filename , "usern name":user.name},"preview":preview}
+    return {"id":new_doc.id,"filename":new_doc.filename , "usern name":user.name,"preview":preview}
 
 @router.post('/text')
 async def text_type(type_text:str):
