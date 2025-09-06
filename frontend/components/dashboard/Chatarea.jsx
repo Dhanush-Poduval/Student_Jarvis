@@ -13,6 +13,7 @@ export default function ChatSection() {
   const [fileID, setfileID] = useState()
   const [input, setInput] = useState('')
   const scrollRef = useRef(null)
+  const [audio,setAudio]=useState(null)
 
   const pdfReciever = async (e) => {
     const token = localStorage.getItem('token')
@@ -41,6 +42,10 @@ export default function ChatSection() {
   const tts=async ()=>{
     const token = localStorage.getItem('token')
     const formData=new FormData()
+    if(audio){
+      audio.pause()
+      audio.currentTime=0
+    }
     try{
       const res= await fetch('http://127.0.0.1:8000/tts',{
         method:'POST',
@@ -52,13 +57,21 @@ export default function ChatSection() {
       })
       const data=await res.blob()
       const dataurl=URL.createObjectURL(data)
-      const audio=new Audio(dataurl)
-      audio.play()
+      const newaudio=new Audio(dataurl)
+      setAudio(newaudio)
+      newaudio.play()
 
     }catch(error){
       console.log("Error : ",error)
     }
+  
   }
+  const stopAudio = () => {
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+  }
+}
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, flashcards])
@@ -152,6 +165,11 @@ export default function ChatSection() {
           <button onClick={tts} className="px-4 py-2 rounded-lg border ">
             Voice 
           </button>
+
+          <button onClick={stopAudio} className="px-4 py-2 rounded-lg border">
+            Stop
+          </button>
+
         </div>
       </div>
     </div>
