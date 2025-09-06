@@ -38,7 +38,27 @@ export default function ChatSection() {
       console.log("Error : ", error)
     }
   }
+  const tts=async ()=>{
+    const token = localStorage.getItem('token')
+    const formData=new FormData()
+    try{
+      const res= await fetch('http://127.0.0.1:8000/tts',{
+        method:'POST',
+        headers:{
+          Authorization:`Bearer ${token}`,
+          'Content-Type':'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({summary_id:summaryID})
+      })
+      const data=await res.blob()
+      const dataurl=URL.createObjectURL(data)
+      const audio=new Audio(dataurl)
+      audio.play()
 
+    }catch(error){
+      console.log("Error : ",error)
+    }
+  }
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, flashcards])
@@ -128,6 +148,9 @@ export default function ChatSection() {
           </button>
           <button onClick={summary} className="px-4 py-2 rounded-lg border ">
             Summarize
+          </button>
+          <button onClick={tts} className="px-4 py-2 rounded-lg border ">
+            Voice 
           </button>
         </div>
       </div>
