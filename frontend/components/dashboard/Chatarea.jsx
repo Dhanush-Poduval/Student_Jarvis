@@ -12,6 +12,7 @@ export default function ChatSection() {
   const [plus, setPlus] = useState(false)
   const [fileID, setfileID] = useState()
   const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(null) // new: null | 'summary' | 'tts'
   const scrollRef = useRef(null)
   const [audio, setAudio] = useState(null)
 
@@ -42,6 +43,8 @@ export default function ChatSection() {
 
   const tts = async () => {
     const token = localStorage.getItem('token')
+    if (!summaryID) return
+    setLoading('tts')
     if (audio) {
       audio.pause()
       audio.currentTime = 0
@@ -62,6 +65,8 @@ export default function ChatSection() {
       newaudio.play()
     } catch (error) {
       console.log("Error : ", error)
+    } finally {
+      setLoading(null)
     }
   }
 
@@ -82,6 +87,7 @@ export default function ChatSection() {
       alert("Upload a PDF first")
       return
     }
+    setLoading('summary')
     try {
       const res = await fetch('http://127.0.0.1:8000/summarize_pdf', {
         method: 'POST',
@@ -92,11 +98,12 @@ export default function ChatSection() {
         body: new URLSearchParams({ document_id: fileID })
       })
       const data = await res.json()
-      console.log("flashcards:", data.flashcards)
       setFlashcards(data.flashcards)
       setsummaryID(data.summary_id)
     } catch (error) {
       console.log("Error : ", error)
+    } finally {
+      setLoading(null)
     }
   }
 
@@ -127,7 +134,8 @@ export default function ChatSection() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen relative">
+      {/* Chat messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {messages.map((msg, idx) => (
           <div
@@ -149,13 +157,15 @@ export default function ChatSection() {
             {flashcards.map((f, idx) => (
               <div key={idx} className="p-4 rounded-xl border shadow-sm">
                 <strong className="block text-base">{f.Point}</strong>
-                <p className="mt-1 text-sm ">{f.Answer}</p>
+                <p className="mt-1 text-sm">{f.Answer}</p>
               </div>
             ))}
           </div>
         )}
         <div ref={scrollRef} />
       </div>
+
+      {/* Controls */}
       <div className="p-4 border-t flex items-center gap-2">
         <Plus onClick={() => setPlus(!plus)} className="cursor-pointer" />
 
@@ -174,9 +184,7 @@ export default function ChatSection() {
             >
               Upload File
             </label>
-            {fileID && (
-              <span className="text-xs text-gray-500">PDF uploaded </span>
-            )}
+            {fileID && <span className="text-xs text-gray-500">PDF uploaded</span>}
           </div>
         )}
 
@@ -209,6 +217,25 @@ export default function ChatSection() {
           Stop
         </button>
       </div>
+
+      {/* Loader Overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="flex flex-col items-center">
+            <div className="loader border-t-4 border-b-4 border-white w-10 h-10 rounded-full animate-spin mb-2"></div>
+            <span className="text-white">
+              {loading === 'summary' ? 'Summarizing...' : 'Converting to voice...'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .loader {
+          border-left-color: transparent;
+          border-right-color: transparent;
+        }
+      `}</style>
     </div>
   )
 }
