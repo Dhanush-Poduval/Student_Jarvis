@@ -133,15 +133,11 @@ export default function ChatSection() {
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`flex ${
-              msg.role === 'user' ? 'justify-end' : 'justify-start'
-            }`}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
               className={`px-4 py-2 rounded-2xl text-sm max-w-xl leading-relaxed border ${
-                msg.role === 'user'
-                  ? 'border-gray-300'
-                  : 'border-gray-200'
+                msg.role === 'user' ? 'border-gray-300' : 'border-gray-200'
               }`}
             >
               {msg.content}
@@ -152,10 +148,7 @@ export default function ChatSection() {
         {flashcards.length > 0 && (
           <div className="mt-6 space-y-4">
             {flashcards.map((f, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-xl border shadow-sm"
-              >
+              <div key={idx} className="p-4 rounded-xl border shadow-sm">
                 <strong className="block text-base">{f.Point}</strong>
                 <p className="mt-1 text-sm text-gray-700">{f.Answer}</p>
               </div>
@@ -167,17 +160,27 @@ export default function ChatSection() {
 
       {/* Controls */}
       <div className="p-4 border-t flex items-center gap-2">
-        <Plus
-          onClick={() => setPlus(!plus)}
-          className="cursor-pointer"
-        />
+        <Plus onClick={() => setPlus(!plus)} className="cursor-pointer" />
+
         {plus && (
-          <Input
-            type="file"
-            accept=".pdf,.docx"
-            onChange={pdfReciever}
-            className="text-sm"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              accept=".pdf,.docx"
+              onChange={pdfReciever}
+              className="hidden"
+              id="file-upload"
+            />
+            <label
+              htmlFor="file-upload"
+              className="px-3 py-2 border rounded-lg text-sm cursor-pointer"
+            >
+              Upload File
+            </label>
+            {fileID && (
+              <span className="text-xs text-gray-500">PDF uploaded ✅</span>
+            )}
+          </div>
         )}
 
         {fileID && (
