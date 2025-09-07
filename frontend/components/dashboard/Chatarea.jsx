@@ -128,7 +128,6 @@ export default function ChatSection() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Chat messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {messages.map((msg, idx) => (
           <div
@@ -157,8 +156,6 @@ export default function ChatSection() {
         )}
         <div ref={scrollRef} />
       </div>
-
-      {/* Controls */}
       <div className="p-4 border-t flex items-center gap-2">
         <Plus onClick={() => setPlus(!plus)} className="cursor-pointer" />
 
