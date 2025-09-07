@@ -61,10 +61,10 @@ export default function Signup() {
       <CardHeader>
         <CardTitle>Sign Up</CardTitle>
         <CardDescription>
-          Enter your name , email password to create an account
+          Enter your name , email , password to create an account
         </CardDescription>
         <CardAction>
-            <Link href="/">
+            <Link href="/login">
                <Button variant="/">Log in</Button>
             </Link>
           
