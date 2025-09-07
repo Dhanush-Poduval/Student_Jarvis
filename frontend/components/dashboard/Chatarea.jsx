@@ -149,7 +149,7 @@ export default function ChatSection() {
             {flashcards.map((f, idx) => (
               <div key={idx} className="p-4 rounded-xl border shadow-sm">
                 <strong className="block text-base">{f.Point}</strong>
-                <p className="mt-1 text-sm text-gray-700">{f.Answer}</p>
+                <p className="mt-1 text-sm ">{f.Answer}</p>
               </div>
             ))}
           </div>
@@ -175,7 +175,7 @@ export default function ChatSection() {
               Upload File
             </label>
             {fileID && (
-              <span className="text-xs text-gray-500">PDF uploaded ✅</span>
+              <span className="text-xs text-gray-500">PDF uploaded </span>
             )}
           </div>
         )}
