@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react'
 
 export default function ChatSection() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hey! Ask me anything about your PDF.' }
+    { role: 'assistant', content: 'Hey! Upload a PDF and then ask me anything about it.' }
   ])
   const [flashcards, setFlashcards] = useState([]) 
   const [summaryID, setsummaryID] = useState(null)
@@ -13,7 +13,7 @@ export default function ChatSection() {
   const [fileID, setfileID] = useState()
   const [input, setInput] = useState('')
   const scrollRef = useRef(null)
-  const [audio,setAudio]=useState(null)
+  const [audio, setAudio] = useState(null)
 
   const pdfReciever = async (e) => {
     const token = localStorage.getItem('token')
@@ -39,39 +39,39 @@ export default function ChatSection() {
       console.log("Error : ", error)
     }
   }
-  const tts=async ()=>{
+
+  const tts = async () => {
     const token = localStorage.getItem('token')
-    const formData=new FormData()
-    if(audio){
+    if (audio) {
       audio.pause()
-      audio.currentTime=0
+      audio.currentTime = 0
     }
-    try{
-      const res= await fetch('http://127.0.0.1:8000/tts',{
-        method:'POST',
-        headers:{
-          Authorization:`Bearer ${token}`,
-          'Content-Type':'application/x-www-form-urlencoded'
+    try {
+      const res = await fetch('http://127.0.0.1:8000/tts', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: new URLSearchParams({summary_id:summaryID})
+        body: new URLSearchParams({ summary_id: summaryID })
       })
-      const data=await res.blob()
-      const dataurl=URL.createObjectURL(data)
-      const newaudio=new Audio(dataurl)
+      const data = await res.blob()
+      const dataurl = URL.createObjectURL(data)
+      const newaudio = new Audio(dataurl)
       setAudio(newaudio)
       newaudio.play()
-
-    }catch(error){
-      console.log("Error : ",error)
+    } catch (error) {
+      console.log("Error : ", error)
     }
-  
   }
+
   const stopAudio = () => {
     if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
+      audio.pause()
+      audio.currentTime = 0
+    }
   }
-}
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, flashcards])
@@ -93,84 +93,121 @@ export default function ChatSection() {
       })
       const data = await res.json()
       console.log("flashcards:", data.flashcards)
-      setFlashcards(data.flashcards) // <-- store flashcards array directly
+      setFlashcards(data.flashcards)
       setsummaryID(data.summary_id)
     } catch (error) {
       console.log("Error : ", error)
     }
   }
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input.trim()
     if (!text) return
     setMessages(prev => [...prev, { role: 'user', content: text }])
     setInput('')
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'This is a placeholder reply.' }])
-    }, 500)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('http://127.0.0.1:8000/ask', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          ask_question: text,
+          document_id: fileID
+        })
+      })
+      const data = await res.json()
+      setMessages(prev => [...prev, { role: 'assistant', content: data.answer }])
+    } catch (error) {
+      console.log("Error : ", error)
+      setMessages(prev => [...prev, { role: 'assistant', content: "Oops something went wrong." }])
+    }
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-col h-screen relative">
-        <div className="flex-1 p-4 pb-24 overflow-y-auto flex flex-col gap-2">
-          {messages.map((msg, idx) => (
+    <div className="flex flex-col h-screen">
+      {/* Chat messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`flex ${
+              msg.role === 'user' ? 'justify-end' : 'justify-start'
+            }`}
+          >
             <div
-              key={idx}
-              className={`max-w-[70%] px-4 py-2 rounded-lg ${
-                msg.role === 'user' ? 'self-end' : 'self-start'
+              className={`px-4 py-2 rounded-2xl text-sm max-w-xl leading-relaxed border ${
+                msg.role === 'user'
+                  ? 'border-gray-300'
+                  : 'border-gray-200'
               }`}
             >
               {msg.content}
             </div>
-          ))}
-
-          
-          {flashcards.length > 0 && (
-            <div className="flex flex-col gap-4 mt-4">
-              {flashcards.map((f, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white shadow-md"
-                >
-                  <strong className="text-lg">{f.Point}</strong>
-                  <p className="mt-2">{f.Answer}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div ref={scrollRef} />
-        </div>
-
-        <div className="flex p-4 border-t gap-2 bottom-20 left-0 w-full items-center">
-          <Plus onClick={() => setPlus(!plus)} />
-          <div>
-            {plus && <Input type="file" accept=".pdf,.docx" onChange={pdfReciever} />}
           </div>
+        ))}
+
+        {flashcards.length > 0 && (
+          <div className="mt-6 space-y-4">
+            {flashcards.map((f, idx) => (
+              <div
+                key={idx}
+                className="p-4 rounded-xl border shadow-sm"
+              >
+                <strong className="block text-base">{f.Point}</strong>
+                <p className="mt-1 text-sm text-gray-700">{f.Answer}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        <div ref={scrollRef} />
+      </div>
+
+      {/* Controls */}
+      <div className="p-4 border-t flex items-center gap-2">
+        <Plus
+          onClick={() => setPlus(!plus)}
+          className="cursor-pointer"
+        />
+        {plus && (
           <Input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && sendMessage()}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-2 border rounded-lg"
+            type="file"
+            accept=".pdf,.docx"
+            onChange={pdfReciever}
+            className="text-sm"
           />
-          <button onClick={sendMessage} className="px-4 py-2 rounded-lg border">
-            Send
-          </button>
-          <button onClick={summary} className="px-4 py-2 rounded-lg border ">
-            Summarize
-          </button>
-          <button onClick={tts} className="px-4 py-2 rounded-lg border ">
-            Voice 
-          </button>
+        )}
 
-          <button onClick={stopAudio} className="px-4 py-2 rounded-lg border">
-            Stop
-          </button>
+        {fileID && (
+          <>
+            <Input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendMessage()}
+              placeholder="Type your question..."
+              className="flex-1 px-4 py-2 border rounded-lg text-sm"
+            />
+            <button
+              onClick={sendMessage}
+              className="px-4 py-2 rounded-lg border text-sm"
+            >
+              Send
+            </button>
+          </>
+        )}
 
-        </div>
+        <button onClick={summary} className="px-3 py-2 rounded-lg border text-sm">
+          Summarize
+        </button>
+        <button onClick={tts} className="px-3 py-2 rounded-lg border text-sm">
+          Voice
+        </button>
+        <button onClick={stopAudio} className="px-3 py-2 rounded-lg border text-sm">
+          Stop
+        </button>
       </div>
     </div>
   )
